@@ -35,6 +35,50 @@ export const poseLandmarks = {
   rightFootIndex: 32,
 } as const;
 export type PoseLandmark = keyof typeof poseLandmarks;
+export type LiveCounterConfig = {
+  minVisibility: number;
+  stableFrames: number;
+  minCycleMs: number;
+  maxCycleMs: number;
+  smoothing: number;
+  targetReps: number;
+} & (
+  | { metric: "knee" | "elbow"; downAngle: number; upAngle: number }
+  | {
+      metric: "jumping-jack";
+      wristsRaisedMargin: number;
+      wristsLoweredMargin: number;
+      ankleOpenRatio: number;
+      ankleClosedRatio: number;
+    }
+);
+const counterDefaults = {
+  minVisibility: 0.7,
+  stableFrames: 3,
+  minCycleMs: 600,
+  maxCycleMs: 15000,
+  smoothing: 0.45,
+  targetReps: 12,
+};
+const liveCounters: Record<string, LiveCounterConfig> = {
+  squats: { ...counterDefaults, metric: "knee", downAngle: 105, upAngle: 155 },
+  "push-ups": {
+    ...counterDefaults,
+    metric: "elbow",
+    downAngle: 95,
+    upAngle: 155,
+    targetReps: 10,
+  },
+  "jumping-jacks": {
+    ...counterDefaults,
+    metric: "jumping-jack",
+    wristsRaisedMargin: 0.15,
+    wristsLoweredMargin: 0.15,
+    ankleOpenRatio: 1.6,
+    ankleClosedRatio: 1.05,
+    targetReps: 20,
+  },
+};
 export type Exercise = {
   id: string;
   name: string;
@@ -65,6 +109,7 @@ export type Exercise = {
     validationStatus: "prototype";
   };
   animationPath: `/animations/${string}.svg`;
+  liveCounter?: LiveCounterConfig;
 };
 type Profile =
   | "knee"
@@ -654,6 +699,7 @@ export const exercises: Exercise[] = seeds.map((seed) => {
   const profile = definitions[seed.profile];
   return {
     id: seed.id,
+    liveCounter: liveCounters[seed.id],
     name: seed.name,
     targetMuscles: seed.muscles,
     equipment: seed.equipment,

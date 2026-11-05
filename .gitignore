@@ -5,3 +5,5 @@ out/
 .env*
 !.env.example
 next-env.d.ts
+
+/public/mediapipe/wasm/
