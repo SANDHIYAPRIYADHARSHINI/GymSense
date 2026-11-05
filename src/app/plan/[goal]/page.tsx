@@ -1,10 +1,15 @@
-import { notFound } from "next/navigation";
-import { Plan } from "@/components/features";
-import { goals } from "@/data/mock";
-import { workoutGoals } from "@/data/userProgress";
-const availableGoals = [...goals, ...workoutGoals];
+﻿import { notFound } from "next/navigation";
+import { WorkoutPlanView } from "@/components/workout-plan";
+import {
+  findWorkoutPlan,
+  planAliases,
+  workoutPlans,
+} from "@/data/workoutPlans";
 export function generateStaticParams() {
-  return availableGoals.map((g) => ({ goal: g.id }));
+  return [
+    ...workoutPlans.map((plan) => plan.id),
+    ...Object.keys(planAliases),
+  ].map((goal) => ({ goal }));
 }
 export default async function Page({
   params,
@@ -12,7 +17,7 @@ export default async function Page({
   params: Promise<{ goal: string }>;
 }) {
   const { goal } = await params;
-  const item = availableGoals.find((g) => g.id === goal);
-  if (!item) notFound();
-  return <Plan title={item.title} goal={goal} />;
+  const plan = findWorkoutPlan(goal);
+  if (!plan) notFound();
+  return <WorkoutPlanView key={plan.id} plan={plan} />;
 }

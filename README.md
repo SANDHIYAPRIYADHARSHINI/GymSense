@@ -20,9 +20,12 @@ npm run typecheck
 npm run lint
 npm run build
 npm run format:check
+npm test
 ```
 
 `npm start` serves a production build. `npm run format` formats source and configuration.
+
+The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cover day locks, exercise completion gating, saved progress round-trips, custom routine editing, and invalid stored data.
 
 ## Workspace structure
 
@@ -35,14 +38,24 @@ npm run format:check
 
 ## Demo walkthrough
 
-1. Select a goal on Home or Plans, switch between Day 1�3, and mark a session complete.
+1. Select a goal on Home or Plans. Complete every exercise on Day 1, mark the day complete, and continue to the next unlocked day. Custom plans start empty; add exercises before training.
 2. Open an exercise. Enable the optional camera preview and log repetitions with the + button. Camera video stays local and tracks stop when leaving the page. Automatic pose detection is not implemented.
 3. Open Nutrition from the desktop sidebar or Home�s nutrition card; filter sample meals by preference.
 4. Open Run, choose a simulated outdoor run or treadmill, set speed, and start/pause/reset. Distance integrates the selected speed; no GPS or device connection is used. The timer is intended for an active browser tab.
 5. Join the demo friends challenge or inspect the sample profile activity graph.
 6. Visit `/login` to preview the sign-in form or continue directly into the demo. Credentials are never sent or stored.
 
-Local interaction state resets when its page unmounts. Profile statistics and challenge steps are illustrative and are not synchronized with workouts. Plans and nutrition values are sample content, not personalized AI outputs.
+Workout plans save checked exercises, completed days, and custom routines in localStorage on this browser. Other local interaction state resets when its page unmounts. Profile statistics and challenge steps are illustrative and are not synchronized with workouts. Plans and nutrition values are sample content, not personalized AI outputs.
+
+## Workout plans
+
+- `/plan/weight-gain`: Push, Pull, then Legs and core.
+- `/plan/weight-loss`: Full-body circuit, Cardio and core, then Lower body and conditioning.
+- `/plan/custom`: three initially empty routines. Add library exercises with sets, repetitions or seconds, and rest time. Remove exercises before completing the day.
+
+Check each exercise on the plan page, then select **Mark Day Complete**. Day 2 unlocks after Day 1, and Day 3 unlocks after Day 2. Empty days cannot be completed. Completed routines are read-only. Refreshing restores the first incomplete day and keeps earlier days checked. Old goal URLs map to these plans and share their saved progress. All library exercises link to an exercise detail and camera preview page. Completion is manually logged on the plan page; camera repetitions do not automatically complete an exercise.
+
+If browser storage is blocked or full, a visible message explains that progress cannot persist. Data stays local to this browser and is not synced to an account.
 
 ## Routes
 

@@ -5,8 +5,6 @@ import {
   ArrowRight,
   Camera,
   Check,
-  ChevronRight,
-  Dumbbell,
   Flame,
   Footprints,
   Pause,
@@ -16,7 +14,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { exercises, meals } from "@/data/mock";
+import { meals } from "@/data/mock";
 import type { Exercise } from "@gymsense/core";
 import { formatTime } from "@/lib/utils";
 import { PageHeading, GoalCards } from "./landing";
@@ -42,103 +40,6 @@ export function Dashboard() {
       <Link className="button secondary" href="/diet">
         Explore nutrition <ArrowRight size={17} />
       </Link>
-    </>
-  );
-}
-export function Plan({ title, goal }: { title: string; goal: string }) {
-  const [day, setDay] = useState(1);
-  const [done, setDone] = useState<number[]>([]);
-  const list =
-    day === 1
-      ? exercises
-      : day === 2
-        ? [exercises[2], exercises[3], exercises[0]]
-        : [exercises[1], exercises[0], exercises[3]];
-  return (
-    <>
-      <PageHeading
-        eyebrow="YOUR 3-DAY STARTER PLAN"
-        title={title}
-        description="A little structure. A lot of possibility. Let�s put your goals in motion."
-      />
-      <div className="plan-banner">
-        <Dumbbell size={40} />
-        <div>
-          <span className="card-tag">
-            {goal === "lose-weight" || goal === "weight-loss"
-              ? "CONDITIONING"
-              : goal === "stay-fit" || goal === "custom"
-                ? "BALANCED FITNESS"
-                : "FOUNDATION STRENGTH"}
-          </span>
-          <h2>
-            {day === 1
-              ? "Build your foundation"
-              : day === 2
-                ? "Find your balance"
-                : "Finish feeling stronger"}
-          </h2>
-          <p>
-            Beginner friendly � {list.length} exercises � Rest a day between
-            sessions
-          </p>
-        </div>
-        <span className="pill">DAY {day} / 3</span>
-      </div>
-      <div className="tabs">
-        {[1, 2, 3].map((d) => (
-          <button
-            key={d}
-            className={d === day ? "active" : ""}
-            onClick={() => setDay(d)}
-          >
-            Day {d} {done.includes(d) && "?"}
-          </button>
-        ))}
-      </div>
-      <div className="section-heading">
-        <h2>Your session</h2>
-        <span className="muted">Warm up for 5 minutes first</span>
-      </div>
-      <div className="exercise-list">
-        {list.map((ex, i) => (
-          <Link
-            className="exercise-row panel"
-            href={`/workout/${ex.id}`}
-            key={ex.id}
-          >
-            <span className="exercise-number">0{i + 1}</span>
-            <span className="exercise-symbol">
-              <Dumbbell />
-            </span>
-            <div>
-              <h3>{ex.name}</h3>
-              <p>{ex.muscle}</p>
-            </div>
-            <span className="exercise-sets">
-              {ex.sets}
-              <small>{ex.duration}</small>
-            </span>
-            <ChevronRight size={18} />
-          </Link>
-        ))}
-      </div>
-      <button
-        className="button primary"
-        onClick={() =>
-          setDone((v) =>
-            v.includes(day) ? v.filter((d) => d !== day) : [...v, day],
-          )
-        }
-      >
-        <Check size={18} />
-        {done.includes(day)
-          ? "Session complete � undo"
-          : "Mark session complete"}
-      </button>
-      <p className="helper">
-        Session progress is a demo and resets when you leave this page.
-      </p>
     </>
   );
 }

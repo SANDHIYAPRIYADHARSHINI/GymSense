@@ -1851,3 +1851,17 @@ input[type="range"] {
     scroll-behavior: auto !important;
   }
 }
+.plan-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #4a593c;
+  border-radius: 8px;
+  background: #10160d;
+  color: #e5eddc;
+}
+.button:disabled:hover {
+  transform: none;
+}

@@ -17,7 +17,7 @@ export const workoutGoals = [
   {
     id: "custom",
     title: "Custom Plan",
-    subtitle: "Start with a flexible mix of strength, balance, and core work.",
+    subtitle: "Build your own three-day routine from the exercise library.",
     tag: "MAKE IT YOURS",
     icon: "custom",
   },
@@ -34,10 +34,10 @@ export const userProgress = {
   lastWorkout: {
     planName: "Weight Gain",
     day: 1,
-    exerciseId: "lunges",
-    exerciseName: "Reverse lunges",
+    exerciseId: "triceps-extensions",
+    exerciseName: "Overhead triceps extensions",
     completedExercises: 2,
-    totalExercises: 4,
-    remainingMinutes: 10,
+    totalExercises: 3,
+    remainingMinutes: 5,
   },
 };
