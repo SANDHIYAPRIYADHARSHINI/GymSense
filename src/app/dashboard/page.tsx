@@ -97,9 +97,12 @@ export default function DashboardPage() {
             <p className="eyebrow">CHOOSE YOUR DIRECTION</p>
             <h2 id="goals-heading">Your goal. Your next move.</h2>
           </div>
-          <span className="text-xs text-[#929a8c]">
-            Sample plans for your next session
-          </span>
+          <Link
+            href="/exercises"
+            className="inline-flex min-h-11 items-center gap-2 text-xs text-[#ccf66b]"
+          >
+            Browse exercise library <ArrowUpRight size={16} />
+          </Link>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5">
           {cards.map(({ id, title, subtitle, tag, href, Icon, cta, badge }) => (

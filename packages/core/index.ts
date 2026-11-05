@@ -5,11 +5,3 @@ export type Goal = {
   tag: string;
   icon: string;
 };
-export type Exercise = {
-  id: string;
-  name: string;
-  sets: string;
-  muscle: string;
-  duration: string;
-  instructions: string[];
-};

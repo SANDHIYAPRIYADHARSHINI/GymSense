@@ -1,8 +1,8 @@
 ﻿import { notFound } from "next/navigation";
-import { Workout } from "@/components/features";
-import { exerciseLibrary } from "@/data/workoutPlans";
+import { ExerciseDetail } from "@/components/exercise-detail";
+import { exercises, findExercise } from "@/data/exercises";
 export function generateStaticParams() {
-  return exerciseLibrary.map((exercise) => ({ exerciseId: exercise.id }));
+  return exercises.map((exercise) => ({ exerciseId: exercise.id }));
 }
 export default async function Page({
   params,
@@ -10,7 +10,7 @@ export default async function Page({
   params: Promise<{ exerciseId: string }>;
 }) {
   const { exerciseId } = await params;
-  const exercise = exerciseLibrary.find((item) => item.id === exerciseId);
+  const exercise = findExercise(exerciseId);
   if (!exercise) notFound();
-  return <Workout exercise={exercise} />;
+  return <ExerciseDetail key={exercise.id} exercise={exercise} />;
 }

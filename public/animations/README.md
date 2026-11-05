@@ -1,1 +1,1 @@
-Reserved for local exercise animation assets. The initial UI uses CSS animations and requires no external assets.
+`stickman-placeholder.svg` is a generic animated placeholder shared by the catalog. It is not an exercise technique demonstration. It respects reduced-motion preferences. Replace individual catalog animation paths with exercise-specific local assets as they become available.

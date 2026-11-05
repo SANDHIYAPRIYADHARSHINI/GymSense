@@ -1,5 +1,6 @@
 ﻿"use client";
 import Link from "next/link";
+import { exercises as exerciseLibrary } from "@/data/exercises";
 import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
@@ -11,11 +12,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import {
-  exerciseLibrary,
-  type PlanExercise,
-  type WorkoutPlan,
-} from "@/data/workoutPlans";
+import { type PlanExercise, type WorkoutPlan } from "@/data/workoutPlans";
 import {
   canCompleteDay,
   completeDay,
@@ -89,9 +86,8 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
     new Set(
       day.exercises.flatMap(
         (item) =>
-          exerciseLibrary
-            .find((ex) => ex.id === item.exerciseId)
-            ?.muscle.split(", ") ?? [],
+          exerciseLibrary.find((ex) => ex.id === item.exerciseId)
+            ?.targetMuscles ?? [],
       ),
     ),
   );
@@ -250,7 +246,9 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
                       {exercise.name}
                       <ArrowUpRight size={16} aria-hidden="true" />
                     </Link>
-                    <p className="mt-1 text-xs">{exercise.muscle}</p>
+                    <p className="mt-1 text-xs">
+                      {exercise.targetMuscles.join(", ")}
+                    </p>
                     <p className="mt-3 text-xs text-[#c4d5b3]">
                       {item.sets} sets &times;{" "}
                       {item.reps !== undefined
@@ -311,6 +309,12 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
           className="mb-7 rounded-2xl border border-[#35412c] bg-[#1a2017] p-5 sm:p-6"
         >
           <h2 id="library-heading">Exercise library</h2>
+          <Link
+            href="/exercises"
+            className="mt-2 inline-flex min-h-11 items-center gap-2 text-xs text-[#ccf66b]"
+          >
+            Search the full catalog <ArrowUpRight size={15} />
+          </Link>
           <p className="mt-2 mb-5 text-xs">
             {completed
               ? "This day is complete and read-only. Select the next unlocked day to build another routine."
@@ -331,7 +335,7 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
                   )}
                   {available.map((ex) => (
                     <option key={ex.id} value={ex.id}>
-                      {ex.name} - {ex.muscle}
+                      {ex.name} - {ex.targetMuscles.join(", ")}
                     </option>
                   ))}
                 </select>

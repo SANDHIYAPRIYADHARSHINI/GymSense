@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  BookOpen,
   ArrowUpRight,
   Dumbbell,
   Footprints,
@@ -44,6 +45,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {label === "Plans" && <span className="tiny-tag">AI</span>}
             </Link>
           ))}
+          <Link
+            href="/exercises"
+            className={`nav-link ${path === "/exercises" ? "active" : ""}`}
+          >
+            <BookOpen size={19} />
+            Exercise library
+          </Link>
           <Link
             href="/diet"
             className={`nav-link ${path === "/diet" ? "active" : ""}`}

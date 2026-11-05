@@ -1,10 +1,7 @@
-﻿import { test } from "node:test";
+import { exercises as exerciseLibrary } from "../src/data/exercises.ts";
+import { test } from "node:test";
 import assert from "node:assert/strict";
-import {
-  exerciseLibrary,
-  workoutPlans,
-  findWorkoutPlan,
-} from "../src/data/workoutPlans.ts";
+import { workoutPlans, findWorkoutPlan } from "../src/data/workoutPlans.ts";
 import {
   canCompleteDay,
   completeDay,
