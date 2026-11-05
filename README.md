@@ -1,146 +1,154 @@
 # GymSense
 
-A mobile-first fitness app built for a hackathon with Next.js App Router, TypeScript, Tailwind CSS 4, and Lucide icons. All content is mock data. No backend, database, authentication, payments, or deployment service is connected.
+A mobile-first fitness companion with on-device AI rep counting, guided workouts, nutrition planning, and run tracking.
 
-## Run locally
+## Problem statement
 
-Requires Node.js 20.9+ and npm 10+.
+Starting a fitness routine often means juggling workout instructions, rep tracking, meal ideas, and motivation across several apps. GymSense brings these into one approachable demo, with camera feedback that runs locally rather than uploading workout video.
+
+## Key features
+
+- Three-day Weight Gain and Weight Loss plans, plus editable Custom routines with persistent day unlocking.
+- A searchable, typed library of 24 exercises with instructions, common mistakes, and six lightweight animated demonstrations.
+- MediaPipe camera rep counting for squats, push-ups, and jumping jacks, with tempo checks, form cues, optional local speech, and per-set scores.
+- Mock daily meals filtered by dietary preferences and allergies, with nutrition totals and manual protein, fiber, and water trackers.
+- Outdoor GPS runs, estimated motion-based steps, manual treadmill sessions, and optional consent-based FTMS Bluetooth telemetry.
+- Mock friends, weekly challenges, and 12-week contribution graphs; locally saved run history.
+- Responsive dark interface, desktop sidebar, and mobile bottom navigation.
+
+This is a hackathon prototype. Login is UI-only; there is no account service, database, payment integration, or remote AI API.
+
+## Tech stack
+
+Next.js App Router, React, TypeScript, Tailwind CSS 4, Lucide icons, MediaPipe Tasks Vision, browser localStorage, Geolocation, Device Motion, and Web Bluetooth. npm workspaces share a small domain-types package. ESLint, Prettier, and Node's built-in test runner provide checks.
+
+## Architecture overview
+
+The **repository root is both the application and deployment root**. Run all commands here, not in `src` or `packages/core`.
+
+```text
+src/app/                 Pages and the GET /api/health route
+src/components/          Interactive UI and shared responsive shell
+src/data/                Typed mock exercises, plans, foods, users, progress
+src/lib/pose/            Landmark geometry, rep cycles, coaching and speech
+src/lib/run/             GPS filtering, timer, steps and saved summaries
+src/lib/bluetooth/       FTMS connection and treadmill packet parsing
+src/lib/                 Diet, social and workout progression logic
+packages/core/           Shared domain types (npm workspace)
+public/animations/       SVG demos and reduced-motion posters
+public/mediapipe/        Committed pose model and generated WASM runtime
+scripts/                 Local asset preparation and SVG generation
+tests/                  Domain and mocked browser-API tests
+```
+
+Next.js renders routes; client components request device permissions only after user actions. Camera inference runs in the browser with locally served assets. Plans, diet preferences, friend memberships, and run summaries use browser storage. Profile streaks and challenge progress derive from deterministic mock users, independently of locally recorded workouts. The health route is a stateless liveness check, not a database or hardware check.
+
+## Local setup
+
+Prerequisites: **Node.js 24.x**, npm 10 or later, Git, and internet access for the initial dependency install. `.nvmrc` and `package.json` declare Node 24. If using nvm, run `nvm install 24` and `nvm use 24`.
 
 ```sh
+git clone --branch feat/gymsense-hackathon-submission https://github.com/SANDHIYAPRIYADHARSHINI/GymSense.git
+cd GymSense
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. In Windows PowerShell environments that block npm.ps1, use `npm.cmd` in place of `npm`.
+Open [localhost:3000](http://localhost:3000). No environment setup, registration, or credentials are needed. On Windows PowerShell, if execution policy blocks `npm.ps1`, use `npm.cmd` instead of `npm`.
 
-## Checks
+Stop the development server with Ctrl+C, then build and serve production:
+
+```sh
+npm run build
+npm start
+```
+
+Open `/api/health` to verify a JSON response:
+
+```json
+{ "status": "ok" }
+```
+
+`npm install` automatically copies MediaPipe WASM from the pinned npm dependency to `public/mediapipe/wasm`. The pose model is already committed; no model download or API key is needed at runtime. If your package manager disables lifecycle scripts, run `npm run prepare:pose` before starting or building. Keep the lockfile; `npm ci` is also available for reproducible installs.
+
+### Quality checks
 
 ```sh
 npm run typecheck
 npm run lint
-npm run build
-npm run format:check
 npm test
+npm run format:check
+npm run build
 ```
 
-`npm start` serves a production build. `npm run format` formats source and configuration.
+`npm run format` applies formatting. Tests use synthetic landmarks, mock sensor data, and pure domain functions; they do not replace live device testing. Node may print a module-type detection warning when loading TypeScript test dependencies.
 
-The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cover day locks, exercise completion gating, saved progress round-trips, custom routine editing, invalid stored data, catalog metadata, plan exercise references, and combined search filters.
+## Environment variables
 
-## Workspace structure
+**None are required.** `.env.example` documents this and deliberately contains no values or secrets. You do not need to copy it to `.env.local`.
 
-- `src/app`: landing, login, dashboard, goal plans, exercise details, nutrition, running, friends, profile, and not-found routes.
-- `src/components`: responsive shell, landing sections, and interactive demo features.
-- `src/data`: sample goals, exercises, and meals.
-- `src/lib`: shared utilities.
-- `packages/core`: workspace package for shared domain types; ready for additional apps or packages.
-- `public/animations`: six stickman demonstrations, static posters, and a fallback asset.
+Future private configuration belongs in ignored `.env.local` files or deployment environment settings. Never commit keys or private data. `NEXT_PUBLIC_` variables are bundled into browser code and must not contain secrets. See the [Next.js environment-variable guide](https://nextjs.org/docs/app/guides/environment-variables).
+
+## Vercel deployment instructions
+
+No deployment has been created automatically. To deploy this branch:
+
+1. In Vercel, add a new project and import this GitHub repository (or your fork).
+2. Deploy `feat/gymsense-hackathon-submission`. If the initial import uses the default branch, select this branch for a deployment or merge the submission branch before deploying the default branch.
+3. Set **Framework Preset: Next.js** and **Root Directory: `./`** (the repository root).
+4. Set **Node.js: 24.x**, **Install Command: `npm install`**, and **Build Command: `npm run build`**. Leave Output Directory at the Next.js default; do not set it to `out` or enable static export.
+5. Leave environment variables empty. Keep install lifecycle scripts enabled so MediaPipe WASM is copied.
+6. Deploy, then visit the HTTPS URL and `/api/health`. Check `/dashboard`, `/plan/weight-loss`, `/workout/squats`, and `/profile`. Allow camera access when prompted. Check that the model and WASM assets load successfully.
+7. Ensure judges can access the deployment: review Vercel deployment protection settings or provide an authorized share link.
+
+These settings follow [Vercel's Next.js integration](https://vercel.com/docs/frameworks/full-stack/nextjs) and [build configuration documentation](https://vercel.com/docs/builds/configure-a-build). No `vercel.json` is needed. HTTPS supports device permission APIs, but browser and device compatibility still apply. Preview and production domains each have separate localStorage.
 
 ## Demo walkthrough
 
-1. Select a goal on Home or Plans. Complete every exercise on Day 1, mark the day complete, and continue to the next unlocked day. Custom plans start empty; add exercises before training.
-2. Open an exercise. Enable the optional camera preview and log repetitions with the + button. Camera video stays local and tracks stop when leaving the page. Live counting is available for squats, push-ups, and jumping jacks.
-3. Open Nutrition from the desktop sidebar or Home�s nutrition card; filter sample meals by preference.
-4. Open Run and choose Outdoor GPS, Manual treadmill, or Bluetooth treadmill. Start/Pause/Resume manage active tracking; Stop saves a completed run in local profile history.
-5. Join the demo friends challenge or inspect the sample profile activity graph.
-6. Visit `/login` to preview the sign-in form or continue directly into the demo. Credentials are never sent or stored.
+### 30-second demo path
 
-Workout plans save checked exercises, completed days, and custom routines in localStorage on this browser. Diet preferences and dated daily intake trackers also persist locally. Other local interaction state resets when its page unmounts. Profile statistics and challenge steps are illustrative and are not synchronized with workouts. Plans and nutrition values are sample content, not personalized AI outputs.
+Before presenting, use desktop Chrome on localhost or HTTPS, position a camera side-on with your whole body visible, and allow extra time for first model initialization and permission prompts. The 30-second path is a short feature tour, not an entire workout.
 
-## Workout plans
+1. **Choose a goal:** open `/dashboard` and select **Weight Loss → Start Plan**.
+2. **Open Day 1:** view **Full-body circuit** on `/plan/weight-loss`; Day 1 is selected by default.
+3. **Start an exercise:** open **Bodyweight squats** (`/workout/squats`) and inspect the looping demo.
+4. **Enable camera rep counting:** click **Start Camera Rep Counter**, allow the camera, and stand upright to establish the starting position.
+5. **Complete reps:** perform two controlled squat cycles, lowering and returning upright; then select **Finish Set & Show Score**. The target is a guide, not a gate for finishing a demonstration set. Partial or rushed movement is rejected.
+6. **View streak graph:** choose **Profile** in navigation to inspect the 12-week graph and a day's activity. Explain that it is sample activity, not automatically updated by the reps just performed.
 
-- `/plan/weight-gain`: Push, Pull, then Legs and core.
-- `/plan/weight-loss`: Full-body circuit, Cardio and core, then Lower body and conditioning.
-- `/plan/custom`: three initially empty routines. Add library exercises with sets, repetitions or seconds, and rest time. Remove exercises before completing the day.
+If camera access is unavailable, use the animation and manual set logger; this fallback does not demonstrate live counting. On the plan page, check every exercise and select **Mark Day Complete** to unlock Day 2. Camera counts do not automatically check plan exercises.
 
-Check each exercise on the plan page, then select **Mark Day Complete**. Day 2 unlocks after Day 1, and Day 3 unlocks after Day 2. Empty days cannot be completed. Completed routines are read-only. Refreshing restores the first incomplete day and keeps earlier days checked. Old goal URLs map to these plans and share their saved progress. All library exercises link to an exercise detail and camera preview page. Completion is manually logged on the plan page; camera repetitions do not automatically complete an exercise.
+### Explore the rest
 
-If browser storage is blocked or full, a visible message explains that progress cannot persist. Data stays local to this browser and is not synced to an account.
+- `/exercises`: search and combine muscle, equipment, and difficulty filters.
+- `/plan/custom`: add exercises from the catalog to an empty routine.
+- `/diet`: change diet/allergy preferences, generate matching meals, and log intake.
+- `/run`: try Manual treadmill without hardware, start and stop a short session, then see it in `/profile` under Completed run history. Outdoor GPS and Bluetooth are optional.
+- `/friends`: search a username, add a friend, inspect their own graph, and join a sample weekly challenge.
+- `/login`: inspect the sign-in UI; no credentials are submitted or stored.
 
-## Routes
+For a fresh demo, clear this site's browser storage. That removes local plans, preferences, friends, and saved runs on that origin. Detailed implementation notes are in [docs/FEATURES.md](docs/FEATURES.md).
 
-### Exercise catalog
+## Known limitations
 
-Open `/exercises` from the dashboard or desktop sidebar. Search by exercise name, muscle, or equipment, then combine muscle group, equipment, and difficulty filters. Clear filters restores all 24 exercises. Empty results include a reset action.
+- Workout and nutrition recommendations are mock content, not personalized AI outputs. Only pose estimation uses an ML model. General guidance only. Consult a qualified professional for medical or clinical nutrition advice.
+- Local data is not backed up or synced. Clearing browser storage removes it. Manual exercise sets and camera set scores last for the current page visit.
+- Social activity ends at the fixed sample date **5 November 2026**. Real workout/run completion does not update mock streaks or challenge totals.
+- Live counters support only squats, push-ups, and jumping jacks. Camera placement, lighting, visibility, and movement range affect accuracy; form scores approximate landmark alignment. Other exercises use demos/manual logging.
+- Camera, GPS, motion, and Bluetooth require compatible browsers and a secure context (HTTPS or localhost). A phone opening a computer's plain HTTP LAN address does not get the localhost exception. Test mobile devices over HTTPS.
+- Tracking pauses when the page is hidden. There is no background GPS, route map, native health integration, or persistent step service. Motion steps are estimates; manual corrections and distance-based estimates are available.
+- Web Bluetooth is not universally available. Only FTMS-advertising treadmills are offered; devices expose different fields. GymSense reads telemetry and never controls the treadmill belt. Use manual mode when unsupported.
+- Automated checks do not establish physical webcam accuracy, mobile sensor behavior, real treadmill compatibility, or all browser interactions. A live hardware demo and deployed smoke test remain necessary.
+- `npm audit` may report development-tool advisories; review the current report before a production release. Do not apply breaking dependency upgrades without validation.
 
-`src/data/exercises.ts` is the canonical typed catalog used by details and the Custom editor. Existing plan exercise IDs are preserved. Every record includes instructions, common mistakes, pose landmarks, a joint angle definition, prototype counting rules, and an existing animation path. Landmark names and indices follow the [official MediaPipe Pose Landmarker reference](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). `liveCounter` holds the thresholds and target reps used by squats, push-ups, and jumping jacks. Other exercises retain prototype metadata and manual logging.
+## Roadmap
 
-Each `/workout/[exerciseId]` detail includes a movement demo (or a clean written-guide placeholder), camera preview, and a manual logger. Enter repetitions or seconds, select **Log set**, and remove individual sets if needed. Set totals last for the current page visit. Camera access is optional, local, and stops on navigation or when the tab is hidden. Camera footage is never recorded or uploaded.
+- Connect completed workouts and runs to a unified local activity/streak model.
+- Calibrate and validate more exercise detectors across devices and movement ranges.
+- Add browser end-to-end accessibility tests and a physical-device test matrix.
+- Improve optional offline support and user-controlled data export/import.
+- Evaluate opt-in accounts, secure sync, and personalized planning after the prototype, with explicit privacy controls.
 
-`/`, `/login`, `/dashboard`, `/plan/build-muscle`, `/plan/lose-weight`, `/plan/stay-fit`, `/workout/squats`, `/workout/push-ups`, `/workout/lunges`, `/workout/plank`, `/diet`, `/run`, `/friends`, `/profile`.
+## Privacy and submission notes
 
-Unknown goal or exercise identifiers return the app�s not-found page.
-
-## Local camera rep counting
-
-On desktop Chrome, open `/workout/squats`, `/workout/push-ups`, or `/workout/jumping-jacks` on localhost or HTTPS and click **Start Camera Rep Counter**. Allow camera access. The mirrored skeleton overlay follows the video, and the card shows count, target, current angle, and Ready / Down / Up state. **Reset Count** clears both the count and any partial movement. Use the camera count in the manual logger when a set is finished.
-
-For squats and push-ups, position the camera side-on with your entire body visible. First reach Up (knees/elbows extended), then cross the Down threshold and return to Up. For jumping jacks, face forward: Up means arms down and feet together; Down means both wrists raised above the shoulders and ankles apart relative to shoulder width. Returning to closed Up completes a rep. Detection requires stable frames and rejects partial, very fast, timed-out, or interrupted cycles.
-
-Low visibility, joints outside the frame, and very dark video pause counting and discard partial cycles while retaining completed reps. Move into view or improve lighting, then return to the starting position. The camera stops on navigation, startup cancellation, detection errors, disconnection, or tab hiding. Permission, device, and model errors appear in the counter card. Other catalog exercises offer camera preview and manual logging only.
-
-MediaPipe Tasks Vision is lazy-loaded after the click. The official lite model is committed in `public/mediapipe/`; `npm install` copies WASM runtime files from the pinned npm package into `public/mediapipe/wasm/`. These generated vendor files are ignored by Git, lint, and formatting. If install scripts are disabled, run `npm run prepare:pose`. The app serves all model/runtime files locally; video, landmarks, brightness samples, and counts never leave the browser. See [MediaPipe?s browser guide](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js) for the inference API.
-
-Tests use synthetic landmark sequences for geometry, complete cycles, initial-position arming, jitter, tracking loss, side changes, reset, and combined arm/leg conditions. Physical webcam accuracy and Chrome console behavior still require a live browser check; browser control was unavailable during implementation. Thresholds are initial defaults and may need calibration for camera placement and movement range.
-
-## Form and tempo coaching
-
-Each catalog record has a typed `coaching` definition: minimum/maximum rep duration, a bottom-pause target, and phase-aware joint-angle or landmark-position rules. Live coaching runs on the three supported counters (squats, push-ups, jumping jacks); other exercises retain their rules for future detectors. Existing camera consent and on-device processing remain unchanged.
-
-One non-blocking cue appears at a time. Form conditions must persist for 400 ms before appearing, message switches have a 1.4-second minimum interval, and corrected warnings clear after a short grace period. Low visibility or lighting loss clears feedback immediately. Cues cover fast/slow movement, body alignment, raised hips, a missing bottom pause, and good reps. Upright squat alignment checks are suppressed during descent. These landmark-based checks approximate body alignment, not spinal curvature.
-
-Rep duration starts when movement leaves the starting position; waiting at the top cannot make a fast rep count. Too-fast, timed-out, interrupted, and partial attempts are rejected. **Finish Set & Show Score** closes the current attempt and displays a score with three components: 40% counted attempts / total attempts, 30% that fraction multiplied by tempo consistency (1 minus the coefficient of variation of valid rep durations), and 30% active visible frames without form warnings. Scores stay between 0 and 100. No attempts produces no score; a set with only rejected attempts scores 0. Idle standing does not improve the form component. Each finished set has its own score and can copy valid reps into the manual logger. **Reset Count** discards the current set, while finished set scores remain for the page visit.
-
-Spoken coaching is off by default. Enable the checkbox for browser speech synthesis using an available on-device English voice. It throttles repeated cues and cancels speech on stop, reset, navigation, and tracking loss. If speech or a local voice is unavailable, visual feedback continues. The [browser SpeechSynthesis API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis) supplies voices and utterance playback; no microphone access is requested.
-
-Tests cover movement timing, rejected reps, correct phase gating, form-rule visibility checks, cue debounce, scoring calculations, event deduplication, set resets, and mocked speech behavior. Live webcam/voice behavior and the browser console remain unverified because browser access was unavailable.
-
-## Stickman demonstrations
-
-Six lightweight SVGs demonstrate squats, push-ups, jumping jacks, lunges, plank, and biceps curls. Plank shows a steady hold with subtle breathing rather than a repeated exercise. Demos loop using spline interpolation and matching endpoints. Static posters support **Pause animation**, and reduced-motion preferences automatically show a static pose. All twelve assets together are under 24 KB, require no animation library, and are served locally. Generate them with `node scripts/generate-demos.mjs`.
-
-The exercise detail page shows its demo before the camera counter. **Watch demo** opens a fullscreen native dialog with numbered instructions, common mistakes, pause/play, and a close button. Escape closes it; native dialog focus trapping and focus restoration support keyboard users, and body scrolling is locked while open. Workout-plan exercise rows also provide **Watch demo**, so learners can review form without navigating away. Opening a demo stops an active camera session; restarting it still requires an explicit click. The inline demo pauses while its fullscreen counterpart plays.
-
-Exercises without a mapped asset display a written-guide placeholder without requesting an unknown file. Unexpected image load failures also fall back to the placeholder. Tests validate assets, size budget, loop endpoints, morph-compatible commands, reduced-motion fallback, and missing-path resolution. SVG XML and rendered start/end poses were inspected locally. Browser animation timing and modal interactions remain unverified because browser access was unavailable.
-
-## Diet preferences and daily meals
-
-Open `/diet` from Nutrition or Home. Set a goal, diet type, allergies, cuisine, meal count, budget, and cooking-time preference. Changes save automatically to `gymsense:diet:preferences:v1` and immediately update the plan, so changing an allergy never leaves stale meal suggestions visible. **Generate daily plan** cycles through available matching recipes. Three-meal mode omits the snack; three meals plus snacks includes one snack slot. The selected recipe variation is not persisted.
-
-`src/data/foods.ts` defines typed mock foods, per-100g nutrition, ingredient allergens, and recipes. `src/lib/diet.ts` filters recipes using every preference, adjusts sample portion sizes by goal, computes each meal from ingredient weights, and sums the displayed meal values for daily calories, protein, carbs, fat, and fiber. Vegetarian excludes eggs and animal flesh; vegan allows plant foods only; eggetarian adds eggs and dairy; pescatarian allows fish, shellfish, eggs, and dairy but excludes meat. Selected allergens always exclude matching tagged ingredients. Budget and normal tiers permit less expensive recipes; premium permits every tier. Under-15 and under-30 options are strict time limits, while meal prep requires batch-friendly recipes. Cooking times assume ready-cooked grains, legumes, and proteins where listed.
-
-No matching recipe produces a clear empty slot; the planner never relaxes dietary or allergen restrictions to fill it. Nutrition is illustrative mock data, not a clinical database or personalized calorie prescription. Product labels and preparation still determine actual allergens.
-
-Protein, fiber, and water have independent manual intake trackers, quick add/remove buttons, and editable example targets. Generating meals does not log intake. Daily entries persist under a local-date storage key and start fresh on the next calendar date. The page checks rollover every minute and when returning to the tab; input handlers also check the date before changing a tracker. Invalid saved data restores safe defaults, and storage failures produce a visible notice.
-
-The page includes: **General guidance only. Consult a qualified professional for medical or clinical nutrition advice.**
-
-Diet tests cover 11,520 preference combinations, all 64 allergen combinations, dietary categories, absent recipe matches, ingredient references, nutrient arithmetic, optional snacks, preference serialization, and daily tracker restoration. Browser interaction and refresh behavior remain unverified because browser access was unavailable.
-
-## Friends, profiles, and streaks
-
-`src/data/users.ts` defines six mock users with distinct 24-week activity histories. The deterministic snapshot ends **5 November 2026**; profiles label this date explicitly. `/profile` shows Alex?s avatar, username, goal, current/longest streak, weekly workouts, total reps, and total active minutes. The dashboard uses the same derived weekly progress.
-
-Each profile?s contribution graph shows exactly 84 daily squares (12 columns of seven consecutive days), including rest days. Hover, tap, focus, or use arrow keys to inspect the date and activity summary. A roving tab stop keeps keyboard traversal manageable; Home/End move within a column, and Ctrl+Home/End reach the window endpoints. Colors represent none, light, moderate, or strong activity. One workout, 60 reps, or 20 active minutes is moderate; two workouts, 150 reps, or 45 active minutes is strong. Remaining positive activity is light.
-
-Streaks are calculated from dated activity. Missing/rest days break a streak, and an unfinished today preserves yesterday?s streak until the day ends. Duplicate daily records are aggregated, and future activity is excluded from profile totals. Weekly metrics begin on Monday. The mock user has completed 3 workouts, run 3.5 km, and completed 400 reps this week, powering the 3-workout, 5-km, and 500-rep challenge cards.
-
-On `/friends`, search usernames (case-insensitive, optional @), add/remove friends, inspect your list, and open a profile preview with that person?s own graph and stats. Friend and challenge memberships persist locally under `gymsense:social:v1`; no invitations, messages, or notifications are sent. Joining a challenge does not change its mock progress. Social and profile activity are not synchronized with workout, camera, or run logs.
-
-Tests cover all mock streaks, 84-cell date windows, intensity bands, duplicate/missing/future records, weekly totals, username search, self-add prevention, friend/challenge toggles, and saved-state validation. Browser tapping, hovering, and refresh interactions remain unverified because browser access was unavailable.
-
-## Running, steps, and FTMS treadmills
-
-`/run` offers three sources: Outdoor GPS, Manual treadmill, and Bluetooth treadmill. Start/Pause/Resume/Stop manage the local tracking session. Active elapsed time uses a monotonic clock, pauses are excluded, and pace is shown as minutes per kilometer. Stop saves a summary (up to the latest 100 runs) under `gymsense:runs:v1`, visible on `/profile` in **Completed run history**. Failed storage writes retain the completed summary on the page with a retry button. These real local sessions remain separate from mock social streaks and challenge data.
-
-Outdoor runs request [Geolocation watchPosition](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/watchPosition) access only after starting/resuming. High-accuracy, recent fixes drive Haversine distance; inaccurate points, impossible jumps, and small position drift are filtered. Resuming starts a new position anchor, so paused travel is excluded. Coordinates are processed in memory and are never persisted or uploaded. GPS needs HTTPS on a phone (localhost is suitable on the development computer). Keep the page visible: hiding it pauses tracking because mobile browsers can suspend sensors and timers in the background.
-
-Step estimation is separately opt-in through a button using [DeviceMotionEvent.requestPermission](https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent/requestPermission_static) where required. An orientation-independent acceleration peak detector provides approximate steps while tracking is active. Unsupported sensors, denied permission, or missing motion events leave manual step entry and a distance/step-length estimate available. Motion-based and distance-based counts are labeled as estimates.
-
-Bluetooth requires a supporting secure-context browser/device and explicit in-app consent, followed by the browser device picker. The picker [filters by FTMS service](https://developer.mozilla.org/en-US/docs/Web/API/Bluetooth/requestDevice) `0x1826` only. Read-only access to Treadmill Data `0x2ACD` decodes optional speed, signed incline, cumulative distance, and device elapsed time using the [Bluetooth SIG GATT Specification Supplement](https://btprodspecificationrefs.blob.core.windows.net/gatt-specification-supplement/GATT_Specification_Supplement.pdf). All optional fields are skipped in their specified order; malformed packets are rejected. Notifications are preferred, with read polling for readable-only devices. No belt-control commands are sent.
-
-FTMS cumulative distance is baselined at the start and again after pauses, so earlier device totals are excluded. If distance is not supplied, fresh speed samples provide an explicitly labeled estimate. Speed estimates expire after three seconds without updates; the session pauses after five seconds without telemetry. Connection states include Disconnected, Connecting, Connected, and Unsupported browser/device. The chooser can be cancelled, and disconnections pause an active FTMS session. Use the treadmill?s own physical controls for the belt.
-
-Manual treadmill mode requires no Bluetooth or GPS. Enter speed/incline, update speed during the run, and optionally correct the session distance. Speed integration accounts for when settings change. Completed summaries store duration, distance, pace, steps, source labels, and timestamps, without location traces or persistent device identifiers.
-
-Automated tests cover timer/pause accounting, pace, GPS filters, FTMS field parsing (including full optional packets and truncation), cumulative counter resets, stale telemetry, step peaks, saved histories, mocked notifications, the exact FTMS-only chooser filter, unsupported Bluetooth, and connection cancellation. Live mobile GPS/motion and physical treadmill interoperability remain unverified because browser/device access was unavailable.
+No API keys, database credentials, real user profiles, camera recordings, or GPS coordinates are committed or required. Video and pose processing stay on-device; run storage contains summaries rather than coordinates. Names and social activity are mock fixtures. `.env*` files are ignored except `.env.example`. The sole API route, `/api/health`, returns only the static status object.
