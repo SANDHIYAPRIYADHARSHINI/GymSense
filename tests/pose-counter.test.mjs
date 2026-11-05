@@ -21,13 +21,13 @@ function harness(options = config) {
     counter,
     frame(angle, phase = null, side = "left", frames = 3) {
       for (let i = 0; i < frames; i++)
-        counter.update(valid(angle, phase, side), (now += 100));
+        counter.update(valid(angle, phase, side), (now += 250));
       return counter.snapshot();
     },
     lost() {
       counter.update(
         { valid: false, angle: null, phase: null, side: null, message: "lost" },
-        (now += 100),
+        (now += 250),
       );
     },
     wait(ms) {
@@ -198,7 +198,7 @@ test("synthetic landmark streams drive real angle analysis and one complete rep"
           counter.preferredSide(),
         );
         assert.equal(measurement.valid, true);
-        counter.update(measurement, (now += 100));
+        counter.update(measurement, (now += 250));
       }
     assert.equal(counter.snapshot().reps, 1, id);
   }
@@ -207,6 +207,6 @@ test("synthetic landmark streams drive real angle analysis and one complete rep"
   let now = 0;
   for (const open of [false, true, false])
     for (let i = 0; i < 5; i++)
-      counter.update(analyzePose(jackPose(open, open), options), (now += 100));
+      counter.update(analyzePose(jackPose(open, open), options), (now += 250));
   assert.equal(counter.snapshot().reps, 1);
 });
