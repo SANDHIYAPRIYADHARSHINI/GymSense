@@ -13,7 +13,6 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { meals } from "@/data/mock";
 import { formatTime } from "@/lib/utils";
 import { PageHeading, GoalCards } from "./landing";
 export function Dashboard() {
@@ -38,56 +37,6 @@ export function Dashboard() {
       <Link className="button secondary" href="/diet">
         Explore nutrition <ArrowRight size={17} />
       </Link>
-    </>
-  );
-}
-export function Diet() {
-  const [filter, setFilter] = useState("All");
-  return (
-    <>
-      <PageHeading
-        eyebrow="FUEL THE FEELING"
-        title="Eat well. Move better."
-        description="Simple meal inspiration to support your next good workout."
-      />
-      <div className="plan-banner">
-        <span className="meal-emoji">??</span>
-        <div>
-          <span className="card-tag">A BALANCED APPROACH</span>
-          <h2>Good food. Good energy.</h2>
-          <p>Sample meals and approximate nutrition, for inspiration.</p>
-        </div>
-      </div>
-      <h2 className="spaced-heading">Your food, your preference</h2>
-      <div className="tabs wrap">
-        {["All", "Vegetarian", "Vegan", "High protein"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={filter === f ? "active" : ""}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-      <div className="meal-grid">
-        {meals
-          .filter((m) => filter === "All" || m.type === filter)
-          .map((m) => (
-            <article className="panel meal-card" key={m.name}>
-              <div className="meal-visual">{m.emoji}</div>
-              <span className="card-tag">
-                {m.time} � {m.type}
-              </span>
-              <h3>{m.name}</h3>
-              <p>{m.detail}</p>
-              <div className="meal-macros">
-                <span>{m.cal} kcal</span>
-                <span>{m.protein}g protein</span>
-              </div>
-            </article>
-          ))}
-      </div>
     </>
   );
 }

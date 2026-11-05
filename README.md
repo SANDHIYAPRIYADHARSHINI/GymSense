@@ -45,7 +45,7 @@ The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cov
 5. Join the demo friends challenge or inspect the sample profile activity graph.
 6. Visit `/login` to preview the sign-in form or continue directly into the demo. Credentials are never sent or stored.
 
-Workout plans save checked exercises, completed days, and custom routines in localStorage on this browser. Other local interaction state resets when its page unmounts. Profile statistics and challenge steps are illustrative and are not synchronized with workouts. Plans and nutrition values are sample content, not personalized AI outputs.
+Workout plans save checked exercises, completed days, and custom routines in localStorage on this browser. Diet preferences and dated daily intake trackers also persist locally. Other local interaction state resets when its page unmounts. Profile statistics and challenge steps are illustrative and are not synchronized with workouts. Plans and nutrition values are sample content, not personalized AI outputs.
 
 ## Workout plans
 
@@ -102,3 +102,17 @@ Six lightweight SVGs demonstrate squats, push-ups, jumping jacks, lunges, plank,
 The exercise detail page shows its demo before the camera counter. **Watch demo** opens a fullscreen native dialog with numbered instructions, common mistakes, pause/play, and a close button. Escape closes it; native dialog focus trapping and focus restoration support keyboard users, and body scrolling is locked while open. Workout-plan exercise rows also provide **Watch demo**, so learners can review form without navigating away. Opening a demo stops an active camera session; restarting it still requires an explicit click. The inline demo pauses while its fullscreen counterpart plays.
 
 Exercises without a mapped asset display a written-guide placeholder without requesting an unknown file. Unexpected image load failures also fall back to the placeholder. Tests validate assets, size budget, loop endpoints, morph-compatible commands, reduced-motion fallback, and missing-path resolution. SVG XML and rendered start/end poses were inspected locally. Browser animation timing and modal interactions remain unverified because browser access was unavailable.
+
+## Diet preferences and daily meals
+
+Open `/diet` from Nutrition or Home. Set a goal, diet type, allergies, cuisine, meal count, budget, and cooking-time preference. Changes save automatically to `gymsense:diet:preferences:v1` and immediately update the plan, so changing an allergy never leaves stale meal suggestions visible. **Generate daily plan** cycles through available matching recipes. Three-meal mode omits the snack; three meals plus snacks includes one snack slot. The selected recipe variation is not persisted.
+
+`src/data/foods.ts` defines typed mock foods, per-100g nutrition, ingredient allergens, and recipes. `src/lib/diet.ts` filters recipes using every preference, adjusts sample portion sizes by goal, computes each meal from ingredient weights, and sums the displayed meal values for daily calories, protein, carbs, fat, and fiber. Vegetarian excludes eggs and animal flesh; vegan allows plant foods only; eggetarian adds eggs and dairy; pescatarian allows fish, shellfish, eggs, and dairy but excludes meat. Selected allergens always exclude matching tagged ingredients. Budget and normal tiers permit less expensive recipes; premium permits every tier. Under-15 and under-30 options are strict time limits, while meal prep requires batch-friendly recipes. Cooking times assume ready-cooked grains, legumes, and proteins where listed.
+
+No matching recipe produces a clear empty slot; the planner never relaxes dietary or allergen restrictions to fill it. Nutrition is illustrative mock data, not a clinical database or personalized calorie prescription. Product labels and preparation still determine actual allergens.
+
+Protein, fiber, and water have independent manual intake trackers, quick add/remove buttons, and editable example targets. Generating meals does not log intake. Daily entries persist under a local-date storage key and start fresh on the next calendar date. The page checks rollover every minute and when returning to the tab; input handlers also check the date before changing a tracker. Invalid saved data restores safe defaults, and storage failures produce a visible notice.
+
+The page includes: **General guidance only. Consult a qualified professional for medical or clinical nutrition advice.**
+
+Diet tests cover 11,520 preference combinations, all 64 allergen combinations, dietary categories, absent recipe matches, ingredient references, nutrient arithmetic, optional snacks, preference serialization, and daily tracker restoration. Browser interaction and refresh behavior remain unverified because browser access was unavailable.
