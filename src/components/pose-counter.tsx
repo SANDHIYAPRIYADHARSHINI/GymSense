@@ -12,6 +12,7 @@ import { createPoseLandmarker } from "@/lib/pose/landmarker";
 import { drawSkeleton, isFrameDark } from "@/lib/pose/drawing";
 import { CoachSession, evaluateForm, type SetScore } from "@/lib/pose/coaching";
 import { CoachSpeech } from "@/lib/pose/speech";
+import { DEMO_OPEN_EVENT } from "@/lib/demo";
 const initial: CounterSnapshot = { reps: 0, state: "Ready", angle: null };
 export function PoseCounter({
   exercise,
@@ -89,9 +90,11 @@ export function PoseCounter({
     };
     document.addEventListener("visibilitychange", hidden);
     window.addEventListener("pagehide", stop);
+    window.addEventListener(DEMO_OPEN_EVENT, stop);
     return () => {
       document.removeEventListener("visibilitychange", hidden);
       window.removeEventListener("pagehide", stop);
+      window.removeEventListener(DEMO_OPEN_EVENT, stop);
       release();
     };
   }, [release, stop]);

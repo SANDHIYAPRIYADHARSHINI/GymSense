@@ -34,7 +34,7 @@ The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cov
 - `src/data`: sample goals, exercises, and meals.
 - `src/lib`: shared utilities.
 - `packages/core`: workspace package for shared domain types; ready for additional apps or packages.
-- `public/animations`: generic animated SVG placeholder, ready for exercise-specific assets.
+- `public/animations`: six stickman demonstrations, static posters, and a fallback asset.
 
 ## Demo walkthrough
 
@@ -65,7 +65,7 @@ Open `/exercises` from the dashboard or desktop sidebar. Search by exercise name
 
 `src/data/exercises.ts` is the canonical typed catalog used by details and the Custom editor. Existing plan exercise IDs are preserved. Every record includes instructions, common mistakes, pose landmarks, a joint angle definition, prototype counting rules, and an existing animation path. Landmark names and indices follow the [official MediaPipe Pose Landmarker reference](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). `liveCounter` holds the thresholds and target reps used by squats, push-ups, and jumping jacks. Other exercises retain prototype metadata and manual logging.
 
-Each `/workout/[exerciseId]` detail includes the animation placeholder, camera preview, and a manual logger. Enter repetitions or seconds, select **Log set**, and remove individual sets if needed. Set totals last for the current page visit. Camera access is optional, local, and stops on navigation or when the tab is hidden. Camera footage is never recorded or uploaded.
+Each `/workout/[exerciseId]` detail includes a movement demo (or a clean written-guide placeholder), camera preview, and a manual logger. Enter repetitions or seconds, select **Log set**, and remove individual sets if needed. Set totals last for the current page visit. Camera access is optional, local, and stops on navigation or when the tab is hidden. Camera footage is never recorded or uploaded.
 
 `/`, `/login`, `/dashboard`, `/plan/build-muscle`, `/plan/lose-weight`, `/plan/stay-fit`, `/workout/squats`, `/workout/push-ups`, `/workout/lunges`, `/workout/plank`, `/diet`, `/run`, `/friends`, `/profile`.
 
@@ -94,3 +94,11 @@ Rep duration starts when movement leaves the starting position; waiting at the t
 Spoken coaching is off by default. Enable the checkbox for browser speech synthesis using an available on-device English voice. It throttles repeated cues and cancels speech on stop, reset, navigation, and tracking loss. If speech or a local voice is unavailable, visual feedback continues. The [browser SpeechSynthesis API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis) supplies voices and utterance playback; no microphone access is requested.
 
 Tests cover movement timing, rejected reps, correct phase gating, form-rule visibility checks, cue debounce, scoring calculations, event deduplication, set resets, and mocked speech behavior. Live webcam/voice behavior and the browser console remain unverified because browser access was unavailable.
+
+## Stickman demonstrations
+
+Six lightweight SVGs demonstrate squats, push-ups, jumping jacks, lunges, plank, and biceps curls. Plank shows a steady hold with subtle breathing rather than a repeated exercise. Demos loop using spline interpolation and matching endpoints. Static posters support **Pause animation**, and reduced-motion preferences automatically show a static pose. All twelve assets together are under 24 KB, require no animation library, and are served locally. Generate them with `node scripts/generate-demos.mjs`.
+
+The exercise detail page shows its demo before the camera counter. **Watch demo** opens a fullscreen native dialog with numbered instructions, common mistakes, pause/play, and a close button. Escape closes it; native dialog focus trapping and focus restoration support keyboard users, and body scrolling is locked while open. Workout-plan exercise rows also provide **Watch demo**, so learners can review form without navigating away. Opening a demo stops an active camera session; restarting it still requires an explicit click. The inline demo pauses while its fullscreen counterpart plays.
+
+Exercises without a mapped asset display a written-guide placeholder without requesting an unknown file. Unexpected image load failures also fall back to the placeholder. Tests validate assets, size budget, loop endpoints, morph-compatible commands, reduced-motion fallback, and missing-path resolution. SVG XML and rendered start/end poses were inspected locally. Browser animation timing and modal interactions remain unverified because browser access was unavailable.

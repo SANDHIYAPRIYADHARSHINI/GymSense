@@ -1,4 +1,5 @@
-﻿export type MuscleGroup =
+import { demoAssets } from "./animationAssets.ts";
+export type MuscleGroup =
   | "Chest"
   | "Shoulders"
   | "Triceps"
@@ -872,7 +873,9 @@ export const exercises: Exercise[] = seeds.map((seed) => {
       countPerSide: seed.perSide ?? false,
       validationStatus: "prototype",
     },
-    animationPath: "/animations/stickman-placeholder.svg",
+    animationPath:
+      demoAssets[seed.id]?.animationPath ??
+      "/animations/stickman-placeholder.svg",
   };
 });
 export function findExercise(id: string) {

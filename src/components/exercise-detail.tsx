@@ -1,11 +1,11 @@
 ﻿"use client";
-import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
 import type { Exercise } from "@/data/exercises";
 import { PageHeading } from "./landing";
 import { PoseCounter } from "./pose-counter";
+import { ExerciseDemo } from "./exercise-demo";
 type LoggedSet = { id: number; value: number; unit: "reps" | "seconds" };
 export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
   const [unit, setUnit] = useState<"reps" | "seconds">(
@@ -47,24 +47,7 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
       </div>
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <section className="panel" aria-labelledby="movement-heading">
-            <h2 id="movement-heading">Movement preview</h2>
-            <div className="mt-4 rounded-xl bg-[#11180e] p-4 text-center">
-              <Image
-                src={exercise.animationPath}
-                width={320}
-                height={240}
-                unoptimized
-                alt="Generic animated stickman placeholder, not an exercise demonstration"
-                className="mx-auto h-auto max-w-full"
-              />
-              <span className="card-tag">STICKMAN ANIMATION PLACEHOLDER</span>
-              <p className="text-xs">
-                Exercise-specific animation coming soon. Follow the written
-                steps below.
-              </p>
-            </div>
-          </section>
+          <ExerciseDemo exercise={exercise} />
           <PoseCounter
             exercise={exercise}
             onUseCount={(reps) => {
@@ -89,7 +72,7 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
               </div>
             </dl>
             <h3 className="mt-7 text-base">Instructions</h3>
-            <ol className="instruction-list">
+            <ol className="instruction-list list-decimal">
               {exercise.instructions.map((step) => (
                 <li key={step}>{step}</li>
               ))}
