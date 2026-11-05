@@ -1,75 +1,19 @@
 ﻿"use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Camera, Minus, Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
 import type { Exercise } from "@/data/exercises";
 import { PageHeading } from "./landing";
+import { PoseCounter } from "./pose-counter";
 type LoggedSet = { id: number; value: number; unit: "reps" | "seconds" };
 export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
-  const [camera, setCamera] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [status, setStatus] = useState("");
-  const video = useRef<HTMLVideoElement>(null);
-  const stream = useRef<MediaStream | null>(null);
-  const mounted = useRef(true);
-  const pending = useRef(false);
   const [unit, setUnit] = useState<"reps" | "seconds">(
     exercise.repCountingRules.mode === "hold" ? "seconds" : "reps",
   );
   const [count, setCount] = useState(0);
   const [loggedSets, setLoggedSets] = useState<LoggedSet[]>([]);
   const nextId = useRef(1);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      stream.current?.getTracks().forEach((track) => track.stop());
-      stream.current = null;
-    };
-  }, []);
-  async function startCamera() {
-    if (pending.current || camera) return;
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setStatus(
-        "Camera access is unavailable here. Use the manual logger below.",
-      );
-      return;
-    }
-    pending.current = true;
-    setRequesting(true);
-    try {
-      const media = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-        audio: false,
-      });
-      if (!mounted.current) {
-        media.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      stream.current = media;
-      if (video.current) video.current.srcObject = media;
-      setCamera(true);
-      setStatus(
-        "Camera preview started. Count reps manually with the controls below; automatic detection is not connected.",
-      );
-    } catch {
-      if (mounted.current)
-        setStatus(
-          "Camera access was denied or no camera was found. The manual logger is still available.",
-        );
-    } finally {
-      pending.current = false;
-      if (mounted.current) setRequesting(false);
-    }
-  }
-  function stopCamera() {
-    stream.current?.getTracks().forEach((track) => track.stop());
-    stream.current = null;
-    if (video.current) video.current.srcObject = null;
-    setCamera(false);
-    setStatus("Camera stopped. You can keep logging manually.");
-  }
   function logSet(e: React.FormEvent) {
     e.preventDefault();
     if (!Number.isInteger(count) || count < 1 || count > 9999) return;
@@ -121,51 +65,13 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
               </p>
             </div>
           </section>
-          <section
-            className="panel camera-panel"
-            aria-labelledby="camera-heading"
-          >
-            <h2 id="camera-heading" className="mb-4">
-              Camera rep counter
-            </h2>
-            <div className="camera-view">
-              <video
-                ref={video}
-                autoPlay
-                muted
-                playsInline
-                className={camera ? "" : "hidden"}
-                aria-label="Live camera preview"
-              />
-              {!camera && (
-                <div className="camera-placeholder">
-                  <Camera size={42} className="lime" aria-hidden="true" />
-                  <h3>Your space. Your pace.</h3>
-                  <p>Start a live preview and log your reps manually.</p>
-                </div>
-              )}
-              <span className="camera-label">
-                LOCAL PREVIEW / MANUAL COUNTING
-              </span>
-            </div>
-            <button
-              className="button primary full mt-4 disabled:opacity-50"
-              type="button"
-              disabled={requesting}
-              onClick={camera ? stopCamera : startCamera}
-            >
-              <Camera size={17} />
-              {requesting
-                ? "Requesting camera..."
-                : camera
-                  ? "Stop Camera"
-                  : "Start Camera Rep Counter"}
-            </button>
-            <p className="helper" role="status">
-              {status ||
-                "Video stays in this browser. No recording, uploads, or automatic pose detection."}
-            </p>
-          </section>
+          <PoseCounter
+            exercise={exercise}
+            onUseCount={(reps) => {
+              setUnit("reps");
+              setCount(reps);
+            }}
+          />
         </div>
         <div className="space-y-6">
           <section className="panel" aria-labelledby="instructions-heading">

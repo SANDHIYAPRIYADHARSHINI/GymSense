@@ -13,24 +13,27 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare:pose": "node scripts/prepare-pose.mjs",
+    "postinstall": "npm run prepare:pose"
   },
   "dependencies": {
+    "@gymsense/core": "*",
+    "@mediapipe/tasks-vision": "1.2.2",
+    "lucide-react": "^0.468.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "lucide-react": "^0.468.0",
-    "@gymsense/core": "*"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.0",
+    "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "tailwindcss": "^4.1.0",
-    "@tailwindcss/postcss": "^4.1.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.0.0",
-    "prettier": "^3.6.0"
+    "prettier": "^3.6.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.0"
   }
 }
