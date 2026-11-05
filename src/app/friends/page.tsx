@@ -1,4 +1,4 @@
-import { Friends } from "@/components/features";
+﻿import { FriendsHub } from "@/components/friends-hub";
 export default function Page() {
-  return <Friends />;
+  return <FriendsHub />;
 }

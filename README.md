@@ -116,3 +116,15 @@ Protein, fiber, and water have independent manual intake trackers, quick add/rem
 The page includes: **General guidance only. Consult a qualified professional for medical or clinical nutrition advice.**
 
 Diet tests cover 11,520 preference combinations, all 64 allergen combinations, dietary categories, absent recipe matches, ingredient references, nutrient arithmetic, optional snacks, preference serialization, and daily tracker restoration. Browser interaction and refresh behavior remain unverified because browser access was unavailable.
+
+## Friends, profiles, and streaks
+
+`src/data/users.ts` defines six mock users with distinct 24-week activity histories. The deterministic snapshot ends **5 November 2026**; profiles label this date explicitly. `/profile` shows Alex?s avatar, username, goal, current/longest streak, weekly workouts, total reps, and total active minutes. The dashboard uses the same derived weekly progress.
+
+Each profile?s contribution graph shows exactly 84 daily squares (12 columns of seven consecutive days), including rest days. Hover, tap, focus, or use arrow keys to inspect the date and activity summary. A roving tab stop keeps keyboard traversal manageable; Home/End move within a column, and Ctrl+Home/End reach the window endpoints. Colors represent none, light, moderate, or strong activity. One workout, 60 reps, or 20 active minutes is moderate; two workouts, 150 reps, or 45 active minutes is strong. Remaining positive activity is light.
+
+Streaks are calculated from dated activity. Missing/rest days break a streak, and an unfinished today preserves yesterday?s streak until the day ends. Duplicate daily records are aggregated, and future activity is excluded from profile totals. Weekly metrics begin on Monday. The mock user has completed 3 workouts, run 3.5 km, and completed 400 reps this week, powering the 3-workout, 5-km, and 500-rep challenge cards.
+
+On `/friends`, search usernames (case-insensitive, optional @), add/remove friends, inspect your list, and open a profile preview with that person?s own graph and stats. Friend and challenge memberships persist locally under `gymsense:social:v1`; no invitations, messages, or notifications are sent. Joining a challenge does not change its mock progress. Social and profile activity are not synchronized with workout, camera, or run logs.
+
+Tests cover all mock streaks, 84-cell date windows, intensity bands, duplicate/missing/future records, weekly totals, username search, self-add prevention, friend/challenge toggles, and saved-state validation. Browser tapping, hovering, and refresh interactions remain unverified because browser access was unavailable.

@@ -1,4 +1,6 @@
-﻿import type { Goal } from "@gymsense/core";
+import { currentUser } from "./users.ts";
+import { profileStats } from "../lib/social.ts";
+import type { Goal } from "@gymsense/core";
 export const workoutGoals = [
   {
     id: "weight-gain",
@@ -22,14 +24,15 @@ export const workoutGoals = [
     icon: "custom",
   },
 ] satisfies Goal[];
+const currentStats = profileStats(currentUser);
 export const userProgress = {
   user: { firstName: "Alex", name: "Alex Johnson" },
   weeklyStats: {
     periodLabel: "This week",
-    workoutsCompleted: 3,
-    activeMinutes: 96,
-    repsCompleted: 248,
-    currentStreak: 12,
+    workoutsCompleted: currentStats.weekly.workouts,
+    activeMinutes: currentStats.weekly.activeMinutes,
+    repsCompleted: currentStats.weekly.reps,
+    currentStreak: currentStats.currentStreak,
   },
   lastWorkout: {
     planName: "Weight Gain",

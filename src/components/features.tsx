@@ -3,14 +3,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  Check,
-  Flame,
   Footprints,
   Pause,
   Play,
-  Plus,
   RotateCcw,
-  Trophy,
   Zap,
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
@@ -129,138 +125,6 @@ export function Run() {
           treadmill connection, or background tracking.
         </p>
       </div>
-    </>
-  );
-}
-export function Friends() {
-  const [joined, setJoined] = useState(false);
-  return (
-    <>
-      <PageHeading
-        eyebrow="BETTER TOGETHER"
-        title="Your people. Your motivation."
-        description="A little friendly competition goes a long way."
-      />
-      <section className="challenge panel">
-        <Trophy size={40} className="lime" />
-        <span className="card-tag">THIS WEEK�S COMMUNITY CHALLENGE</span>
-        <h2>The 20K step club.</h2>
-        <p>One week. 20,000 steps. A whole lot of good energy.</p>
-        <div className="progress-track">
-          <span style={{ width: joined ? "42%" : "0%" }} />
-        </div>
-        <p>
-          {joined
-            ? "8,400 / 20,000 sample steps"
-            : "Join Alex, Maya, and Jordan in this demo challenge."}
-        </p>
-        <button className="button primary" onClick={() => setJoined((v) => !v)}>
-          {joined ? <Check size={17} /> : <Plus size={17} />}{" "}
-          {joined ? "Joined � leave challenge" : "Join challenge"}
-        </button>
-        <p className="helper">
-          Demo membership only. No invitations or notifications are sent.
-        </p>
-      </section>
-      <h2 className="spaced-heading">Your training circle</h2>
-      <div className="friend-grid">
-        {[
-          {
-            name: "Maya Chen",
-            initials: "MC",
-            streak: 12,
-            activity: "Finished a strength session",
-          },
-          {
-            name: "Jordan Lee",
-            initials: "JL",
-            streak: 8,
-            activity: "Ran a steady 5K",
-          },
-          {
-            name: "Sam Rivera",
-            initials: "SR",
-            streak: 6,
-            activity: "Hit their weekly goal",
-          },
-        ].map((f) => (
-          <div className="panel friend" key={f.name}>
-            <div className="avatar">{f.initials}</div>
-            <h3>{f.name}</h3>
-            <p>{f.activity}</p>
-            <span className="pill">
-              <Flame size={14} /> {f.streak}-day streak
-            </span>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-export function Profile() {
-  return (
-    <>
-      <PageHeading
-        eyebrow="THE WORK IS ADDING UP"
-        title="Look how far you�ve come."
-        description="Every small effort is part of something bigger."
-      />
-      <div className="profile-header panel">
-        <div className="avatar large">AJ</div>
-        <div>
-          <h2>Alex Johnson</h2>
-          <p>Building strength, one day at a time.</p>
-          <span className="pill">DEMO ATHLETE</span>
-        </div>
-        <Link href="/dashboard" className="button secondary">
-          Choose a goal <ArrowRight size={16} />
-        </Link>
-      </div>
-      <div className="profile-stats">
-        {[
-          ["12", "Day streak"],
-          ["24", "Workouts"],
-          ["18.5", "Kilometers"],
-          ["8", "Active weeks"],
-        ].map(([v, l]) => (
-          <div className="panel" key={l}>
-            <strong>{v}</strong>
-            <span>{l}</span>
-          </div>
-        ))}
-      </div>
-      <section className="panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">CONSISTENCY LOOKS GOOD ON YOU</p>
-            <h2>Your activity, at a glance.</h2>
-          </div>
-          <span className="pill">
-            <Flame size={15} /> 12-day streak
-          </span>
-        </div>
-        <p className="muted">Last 12 weeks � sample activity</p>
-        <div
-          className="streak-graph"
-          role="img"
-          aria-label="Sample activity graph showing 12 weeks of exercise with varying activity levels"
-        >
-          {Array.from({ length: 84 }, (_, i) => (
-            <div
-              key={i}
-              className={`streak-cell level-${(i * 7 + (i % 5)) % 4}`}
-              title={`Sample day ${i + 1}: ${(i * 7 + (i % 5)) % 4} activities`}
-            />
-          ))}
-        </div>
-        <div className="graph-legend">
-          Less{" "}
-          {[0, 1, 2, 3].map((n) => (
-            <i key={n} className={`level-${n}`} />
-          ))}{" "}
-          More
-        </div>
-      </section>
     </>
   );
 }
