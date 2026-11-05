@@ -1,4 +1,4 @@
-import type { Exercise, Goal } from "@gymsense/core";
+import type { Goal } from "@gymsense/core";
 export const goals: Goal[] = [
   {
     id: "build-muscle",
@@ -20,56 +20,6 @@ export const goals: Goal[] = [
     subtitle: "Move better, every single day.",
     tag: "EVERYDAY FITNESS",
     icon: "activity",
-  },
-];
-export const exercises: Exercise[] = [
-  {
-    id: "squats",
-    name: "Bodyweight squats",
-    sets: "3 � 12 reps",
-    muscle: "Quads � Glutes",
-    duration: "6 min",
-    instructions: [
-      "Stand with feet shoulder-width apart.",
-      "Push your hips back and bend your knees with control.",
-      "Keep your chest lifted, then press through your feet to stand.",
-    ],
-  },
-  {
-    id: "push-ups",
-    name: "Push-ups",
-    sets: "3 � 10 reps",
-    muscle: "Chest � Triceps",
-    duration: "5 min",
-    instructions: [
-      "Place hands slightly wider than your shoulders.",
-      "Keep a straight line from head to heels.",
-      "Lower with control and push back up. Use your knees if needed.",
-    ],
-  },
-  {
-    id: "lunges",
-    name: "Reverse lunges",
-    sets: "3 � 12 reps",
-    muscle: "Legs � Balance",
-    duration: "6 min",
-    instructions: [
-      "Stand tall and take one foot back.",
-      "Bend both knees, keeping your front knee aligned with your foot.",
-      "Push through the front foot and alternate sides.",
-    ],
-  },
-  {
-    id: "plank",
-    name: "Forearm plank",
-    sets: "3 � 30 sec",
-    muscle: "Core � Stability",
-    duration: "4 min",
-    instructions: [
-      "Place elbows beneath your shoulders.",
-      "Brace your core and keep your hips level.",
-      "Breathe steadily; stop the hold if your form slips.",
-    ],
   },
 ];
 export const meals = [

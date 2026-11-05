@@ -1,0 +1,6 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240" role="img" aria-label="Generic animated stickman placeholder, not an exercise demonstration">
+<style>.figure{transform-origin:160px 195px;animation:sway 3s ease-in-out infinite}@keyframes sway{50%{transform:rotate(5deg)}}@media(prefers-reduced-motion:reduce){.figure{animation:none}}</style>
+<ellipse cx="160" cy="212" rx="65" ry="8" fill="#ccf66b" opacity=".1"/>
+<circle cx="160" cy="115" r="88" fill="none" stroke="#ccf66b" stroke-opacity=".12"/>
+<g class="figure" fill="none" stroke="#ccf66b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="160" cy="49" r="17"/><path d="M160 67V133M160 84L120 111L103 83M160 84L196 109L218 81M160 133L135 171L127 200M160 133L183 169L197 200"/></g>
+</svg>

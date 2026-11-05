@@ -25,7 +25,7 @@ npm test
 
 `npm start` serves a production build. `npm run format` formats source and configuration.
 
-The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cover day locks, exercise completion gating, saved progress round-trips, custom routine editing, and invalid stored data.
+The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cover day locks, exercise completion gating, saved progress round-trips, custom routine editing, invalid stored data, catalog metadata, plan exercise references, and combined search filters.
 
 ## Workspace structure
 
@@ -34,7 +34,7 @@ The test runner requires Node.js 22.18+ (native TypeScript stripping). Tests cov
 - `src/data`: sample goals, exercises, and meals.
 - `src/lib`: shared utilities.
 - `packages/core`: workspace package for shared domain types; ready for additional apps or packages.
-- `public/animations`: reserved for future local exercise animations.
+- `public/animations`: generic animated SVG placeholder, ready for exercise-specific assets.
 
 ## Demo walkthrough
 
@@ -58,6 +58,14 @@ Check each exercise on the plan page, then select **Mark Day Complete**. Day 2 u
 If browser storage is blocked or full, a visible message explains that progress cannot persist. Data stays local to this browser and is not synced to an account.
 
 ## Routes
+
+### Exercise catalog
+
+Open `/exercises` from the dashboard or desktop sidebar. Search by exercise name, muscle, or equipment, then combine muscle group, equipment, and difficulty filters. Clear filters restores all 24 exercises. Empty results include a reset action.
+
+`src/data/exercises.ts` is the canonical typed catalog used by details and the Custom editor. Existing plan exercise IDs are preserved. Every record includes instructions, common mistakes, pose landmarks, a joint angle definition, prototype counting rules, and an existing animation path. Landmark names and indices follow the [official MediaPipe Pose Landmarker reference](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). Angle ranges are mock configuration requiring exercise-specific calibration; they do not run automatic counting.
+
+Each `/workout/[exerciseId]` detail includes the animation placeholder, camera preview, and a manual logger. Enter repetitions or seconds, select **Log set**, and remove individual sets if needed. Set totals last for the current page visit. Camera access is optional, local, and stops on navigation; automatic counting and recording are not implemented.
 
 `/`, `/login`, `/dashboard`, `/plan/build-muscle`, `/plan/lose-weight`, `/plan/stay-fit`, `/workout/squats`, `/workout/push-ups`, `/workout/lunges`, `/workout/plank`, `/diet`, `/run`, `/friends`, `/profile`.
 

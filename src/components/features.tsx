@@ -1,9 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  Camera,
   Check,
   Flame,
   Footprints,
@@ -15,7 +14,6 @@ import {
   Zap,
 } from "lucide-react";
 import { meals } from "@/data/mock";
-import type { Exercise } from "@gymsense/core";
 import { formatTime } from "@/lib/utils";
 import { PageHeading, GoalCards } from "./landing";
 export function Dashboard() {
@@ -40,112 +38,6 @@ export function Dashboard() {
       <Link className="button secondary" href="/diet">
         Explore nutrition <ArrowRight size={17} />
       </Link>
-    </>
-  );
-}
-export function Workout({ exercise }: { exercise: Exercise }) {
-  const [reps, setReps] = useState(0);
-  const [camera, setCamera] = useState(false);
-  const [status, setStatus] = useState("");
-  const video = useRef<HTMLVideoElement>(null);
-  const stream = useRef<MediaStream | null>(null);
-  useEffect(
-    () => () => stream.current?.getTracks().forEach((t) => t.stop()),
-    [],
-  );
-  async function toggleCamera() {
-    if (camera) {
-      stream.current?.getTracks().forEach((t) => t.stop());
-      setCamera(false);
-      return;
-    }
-    try {
-      const media = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-        audio: false,
-      });
-      stream.current = media;
-      if (video.current) video.current.srcObject = media;
-      setCamera(true);
-      setStatus("Camera on. Use + to log reps manually.");
-    } catch {
-      setStatus(
-        "Camera unavailable or permission denied. You can still use the manual counter.",
-      );
-    }
-  }
-  return (
-    <>
-      <PageHeading
-        eyebrow="MOVE WITH INTENTION"
-        title={exercise.name}
-        description={`${exercise.muscle} � ${exercise.sets} � Rest 60 seconds between sets`}
-      />
-      <div className="two-column">
-        <section className="panel camera-panel">
-          <div className="camera-view">
-            <video
-              ref={video}
-              autoPlay
-              muted
-              playsInline
-              className={camera ? "" : "hidden"}
-            />
-            {!camera && (
-              <div className="camera-placeholder">
-                <Camera size={48} />
-                <h3>Your space. Your pace.</h3>
-                <p>Enable your camera for a live form preview.</p>
-              </div>
-            )}
-            <span className="camera-label">MANUAL REP COUNTER � DEMO</span>
-          </div>
-          <div className="counter">
-            <button
-              className="icon-button"
-              aria-label="Reset repetitions"
-              onClick={() => setReps(0)}
-            >
-              <RotateCcw size={19} />
-            </button>
-            <div>
-              <strong>{reps.toString().padStart(2, "0")}</strong>
-              <span>REPS LOGGED</span>
-            </div>
-            <button
-              className="icon-button plus"
-              aria-label="Add repetition"
-              onClick={() => setReps((r) => r + 1)}
-            >
-              <Plus />
-            </button>
-          </div>
-          <button className="button secondary full" onClick={toggleCamera}>
-            <Camera size={17} />
-            {camera ? "Turn camera off" : "Enable camera"}
-          </button>
-          <p className="helper" role="status">
-            {status ||
-              "Video stays in your browser. No recording or AI pose detection."}
-          </p>
-        </section>
-        <section className="panel">
-          <p className="eyebrow">FORM FIRST</p>
-          <h2>Make every rep count.</h2>
-          <ol className="instruction-list">
-            {exercise.instructions.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-          <div className="tip">
-            <Zap size={20} />
-            <p>Move at a comfortable pace. Stop if a movement causes pain.</p>
-          </div>
-          <Link href="/dashboard" className="text-link">
-            Back to your plans <ArrowRight size={16} />
-          </Link>
-        </section>
-      </div>
     </>
   );
 }
