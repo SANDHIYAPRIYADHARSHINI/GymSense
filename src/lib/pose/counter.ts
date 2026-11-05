@@ -1,4 +1,5 @@
 ﻿import type { LiveCounterConfig } from "@/data/exercises";
+import type { RepEvent } from "./events";
 export type Landmark = {
   x: number;
   y: number;
@@ -146,10 +147,16 @@ export class RepCounter {
   private reps = 0;
   private candidate: "Down" | "Up" | null = null;
   private candidateFrames = 0;
-  private downAt: number | null = null;
-  private armedAt: number | null = null;
+  private candidateAt = 0;
+  private movementAt: number | null = null;
+  private bottomAt: number | null = null;
+  private bottomPauseMs = 0;
   private smoothed: number | null = null;
   private side: "left" | "right" | null = null;
+  private minimumAngle = 180;
+  private eventId = 0;
+  private event: RepEvent | null = null;
+  private lastTime = 0;
   private config: LiveCounterConfig;
   constructor(config: LiveCounterConfig) {
     this.config = config;
@@ -157,24 +164,60 @@ export class RepCounter {
   snapshot(): CounterSnapshot {
     return { reps: this.reps, state: this.phase, angle: this.smoothed };
   }
-  invalidate() {
-    this.phase = "Ready";
-    this.candidate = null;
-    this.candidateFrames = 0;
-    this.downAt = null;
-    this.armedAt = null;
-    this.smoothed = null;
-    this.side = null;
-    return this.snapshot();
+  isMoving() {
+    return this.movementAt !== null;
   }
-  reset() {
-    this.reps = 0;
-    return this.invalidate();
+  lastEvent() {
+    return this.event;
   }
   preferredSide() {
     return this.side;
   }
+  private completeness() {
+    return this.config.metric === "jumping-jack"
+      ? this.phase === "Down"
+        ? 1
+        : 0.5
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            (this.config.upAngle - this.minimumAngle) /
+              (this.config.upAngle - this.config.downAngle),
+          ),
+        );
+  }
+  private emit(outcome: RepEvent["outcome"], now: number) {
+    this.event = {
+      id: ++this.eventId,
+      outcome,
+      durationMs: Math.max(0, now - (this.movementAt ?? now)),
+      bottomPauseMs: this.bottomPauseMs,
+      completeness: this.completeness(),
+    };
+  }
+  invalidate() {
+    if (this.movementAt !== null && this.completeness() >= 0.25)
+      this.emit("incomplete", this.lastTime);
+    this.phase = "Ready";
+    this.candidate = null;
+    this.candidateFrames = 0;
+    this.movementAt = null;
+    this.bottomAt = null;
+    this.bottomPauseMs = 0;
+    this.smoothed = null;
+    this.side = null;
+    this.minimumAngle = 180;
+    return this.snapshot();
+  }
+  reset() {
+    this.movementAt = null;
+    this.reps = 0;
+    this.event = null;
+    return this.invalidate();
+  }
   update(measurement: PoseMeasurement, now: number): CounterSnapshot {
+    this.lastTime = now;
     if (!measurement.valid || measurement.angle === null)
       return this.invalidate();
     if (this.side && measurement.side && this.side !== measurement.side)
@@ -185,8 +228,6 @@ export class RepCounter {
         ? measurement.angle
         : this.smoothed +
           this.config.smoothing * (measurement.angle - this.smoothed);
-    if (this.downAt !== null && now - this.downAt > this.config.maxCycleMs)
-      return this.invalidate();
     let next = measurement.phase;
     if (this.config.metric !== "jumping-jack")
       next =
@@ -195,6 +236,22 @@ export class RepCounter {
           : this.smoothed >= this.config.upAngle
             ? "Up"
             : null;
+    if (this.phase === "Up" && next !== "Up" && this.movementAt === null) {
+      this.movementAt = now;
+      this.minimumAngle = this.smoothed;
+    }
+    if (this.movementAt !== null) {
+      this.minimumAngle = Math.min(this.minimumAngle, this.smoothed);
+      if (now - this.movementAt > this.config.maxCycleMs) {
+        this.emit("too-slow", now);
+        this.movementAt = null;
+        return this.invalidate();
+      }
+    }
+    if (this.phase === "Down" && this.bottomAt !== null && next !== "Down") {
+      this.bottomPauseMs = Math.max(this.bottomPauseMs, now - this.bottomAt);
+      this.bottomAt = null;
+    }
     if (!next) {
       this.candidate = null;
       this.candidateFrames = 0;
@@ -203,26 +260,26 @@ export class RepCounter {
     if (next !== this.candidate) {
       this.candidate = next;
       this.candidateFrames = 1;
+      this.candidateAt = now;
     } else this.candidateFrames++;
     if (this.candidateFrames < this.config.stableFrames) return this.snapshot();
     if (next === "Up") {
-      if (
-        this.phase === "Down" &&
-        this.downAt !== null &&
-        this.armedAt !== null
-      ) {
-        if (
-          now - this.armedAt >= this.config.minCycleMs &&
-          now - this.downAt >= this.config.minCycleMs / 3
-        )
+      if (this.phase === "Down" && this.movementAt !== null) {
+        const duration = now - this.movementAt;
+        if (duration >= this.config.minCycleMs) {
           this.reps++;
-      }
-      if (this.phase !== "Up") this.armedAt = now;
+          this.emit("counted", now);
+        } else this.emit("too-fast", now);
+      } else if (this.movementAt !== null && this.completeness() >= 0.25)
+        this.emit("incomplete", now);
       this.phase = "Up";
-      this.downAt = null;
+      this.movementAt = null;
+      this.bottomAt = null;
+      this.bottomPauseMs = 0;
+      this.minimumAngle = 180;
     } else if (this.phase === "Up") {
       this.phase = "Down";
-      this.downAt = now;
+      this.bottomAt = this.candidateAt;
     }
     return this.snapshot();
   }

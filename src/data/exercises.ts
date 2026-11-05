@@ -35,6 +35,33 @@ export const poseLandmarks = {
   rightFootIndex: 32,
 } as const;
 export type PoseLandmark = keyof typeof poseLandmarks;
+export type CoachMessage =
+  | "Go a little slower"
+  | "Control the movement"
+  | "Keep your back straighter"
+  | "Lower your hips a bit"
+  | "Great rep!"
+  | "Pause at the bottom";
+export type FormRule = {
+  id: string;
+  message: CoachMessage;
+  priority: number;
+  when: "always" | "Up" | "Down";
+  points: [PoseLandmark, PoseLandmark, PoseLandmark];
+} & (
+  | { kind: "angle"; minDegrees: number; maxDegrees: number }
+  | {
+      kind: "line-offset";
+      direction: "above" | "below";
+      maxOffsetRatio: number;
+    }
+);
+export type CoachingDefinition = {
+  minRepDurationMs: number;
+  maxRepDurationMs: number;
+  bottomPauseMs: number;
+  formRules: FormRule[];
+};
 export type LiveCounterConfig = {
   minVisibility: number;
   stableFrames: number;
@@ -110,6 +137,7 @@ export type Exercise = {
   };
   animationPath: `/animations/${string}.svg`;
   liveCounter?: LiveCounterConfig;
+  coaching: CoachingDefinition;
 };
 type Profile =
   | "knee"
@@ -695,11 +723,121 @@ const seeds: Seed[] = [
     ],
   },
 ];
+function coachingFor(seed: Seed): CoachingDefinition {
+  const prone = ["push-ups", "plank", "mountain-climbers", "burpees"].includes(
+    seed.id,
+  );
+  const formRules: FormRule[] = prone
+    ? [
+        {
+          id: "hips-high",
+          kind: "line-offset",
+          points: ["leftShoulder", "leftHip", "leftAnkle"],
+          direction: "above",
+          maxOffsetRatio: 0.08,
+          message: "Lower your hips a bit",
+          priority: 4,
+          when: "always",
+        },
+        {
+          id: "hips-sag",
+          kind: "line-offset",
+          points: ["leftShoulder", "leftHip", "leftAnkle"],
+          direction: "below",
+          maxOffsetRatio: 0.08,
+          message: "Keep your back straighter",
+          priority: 3,
+          when: "always",
+        },
+        {
+          id: "prone-alignment",
+          kind: "angle",
+          points: ["leftShoulder", "leftHip", "leftAnkle"],
+          minDegrees: 150,
+          maxDegrees: 180,
+          message: "Keep your back straighter",
+          priority: 2,
+          when: "always",
+        },
+      ]
+    : [
+        {
+          id: "body-alignment",
+          kind: "angle",
+          points: ["leftShoulder", "leftHip", "leftKnee"],
+          minDegrees: 145,
+          maxDegrees: 180,
+          message: "Keep your back straighter",
+          priority: 3,
+          when: "Up",
+        },
+      ];
+  if (
+    ["dumbbell-rows", "reverse-fly", "triceps-dips", "russian-twists"].includes(
+      seed.id,
+    )
+  ) {
+    formRules.splice(0, formRules.length, {
+      id: "torso-position",
+      kind: "angle",
+      points: ["leftShoulder", "leftHip", "leftKnee"],
+      minDegrees: 45,
+      maxDegrees: 140,
+      message: "Control the movement",
+      priority: 3,
+      when: "Up",
+    });
+  }
+  if (["squats", "goblet-squats"].includes(seed.id))
+    formRules.push({
+      id: "bottom-torso-position",
+      kind: "angle",
+      points: ["leftShoulder", "leftHip", "leftKnee"],
+      minDegrees: 35,
+      maxDegrees: 180,
+      message: "Keep your back straighter",
+      priority: 3,
+      when: "Down",
+    });
+  const fast = [
+    "jumping-jacks",
+    "march-in-place",
+    "mountain-climbers",
+  ].includes(seed.id);
+  return {
+    minRepDurationMs: fast
+      ? 600
+      : seed.id === "burpees"
+        ? 2500
+        : seed.profile === "hold"
+          ? 1000
+          : 1200,
+    maxRepDurationMs:
+      seed.profile === "hold"
+        ? 120000
+        : fast
+          ? 4000
+          : seed.id === "burpees"
+            ? 12000
+            : 8000,
+    bottomPauseMs:
+      fast || seed.profile === "hold" || seed.id === "burpees" ? 0 : 350,
+    formRules,
+  };
+}
 export const exercises: Exercise[] = seeds.map((seed) => {
   const profile = definitions[seed.profile];
+  const coaching = coachingFor(seed);
   return {
     id: seed.id,
-    liveCounter: liveCounters[seed.id],
+    coaching,
+    liveCounter: liveCounters[seed.id]
+      ? {
+          ...liveCounters[seed.id],
+          minCycleMs: coaching.minRepDurationMs,
+          maxCycleMs: coaching.maxRepDurationMs,
+        }
+      : undefined,
     name: seed.name,
     targetMuscles: seed.muscles,
     equipment: seed.equipment,
@@ -707,7 +845,11 @@ export const exercises: Exercise[] = seeds.map((seed) => {
     instructions: seed.instructions,
     commonMistakes: seed.mistakes,
     mediaPipeLandmarks: Array.from(
-      new Set([...profile.points, ...(seed.extraLandmarks ?? [])]),
+      new Set([
+        ...profile.points,
+        ...coaching.formRules.flatMap((rule) => rule.points),
+        ...(seed.extraLandmarks ?? []),
+      ]),
     ),
     jointAngleDefinition: {
       label: profile.label,
