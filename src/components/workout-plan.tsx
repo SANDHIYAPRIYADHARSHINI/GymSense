@@ -26,6 +26,7 @@ import {
   type PlanProgress,
 } from "@/lib/workoutProgress";
 import { PageHeading } from "./landing";
+import { ExerciseDemo } from "./exercise-demo";
 const libraryIds = new Set(exerciseLibrary.map((ex) => ex.id));
 export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
   const [progress, setProgress] = useState<PlanProgress>(emptyProgress);
@@ -279,6 +280,7 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
                     </button>
                   )}
                 </div>
+                <ExerciseDemo exercise={exercise} triggerOnly />
                 <label className="mt-4 flex min-h-11 w-fit cursor-pointer items-center gap-3 text-xs text-[#d0dcc5]">
                   <input
                     type="checkbox"
