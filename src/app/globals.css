@@ -1882,3 +1882,6 @@ input[type="range"] {
 .demo-dialog::backdrop {
   background: #000c;
 }
+.contribution-day:hover {
+  transform: none;
+}
