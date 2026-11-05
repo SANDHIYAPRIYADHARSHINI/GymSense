@@ -65,9 +65,9 @@ export function Plan({ title, goal }: { title: string; goal: string }) {
         <Dumbbell size={40} />
         <div>
           <span className="card-tag">
-            {goal === "lose-weight"
+            {goal === "lose-weight" || goal === "weight-loss"
               ? "CONDITIONING"
-              : goal === "stay-fit"
+              : goal === "stay-fit" || goal === "custom"
                 ? "BALANCED FITNESS"
                 : "FOUNDATION STRENGTH"}
           </span>
