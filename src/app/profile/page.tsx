@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+import { RunHistory } from "@/components/run-history";
+import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { currentUser, MOCK_TODAY } from "@/data/users";
 import { displayDate } from "@/lib/social";
@@ -18,6 +19,7 @@ export default function Page() {
         </Link>
       </div>
       <ProfileCard user={currentUser} />
+      <RunHistory />
       <p className="mt-6 text-xs">
         Demo athlete profile. Streaks and totals are calculated from 24 weeks of
         sample daily activity.
