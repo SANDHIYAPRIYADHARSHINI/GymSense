@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BookOpen,
-  ArrowUpRight,
   Dumbbell,
   Footprints,
   Home,
@@ -82,9 +81,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <br />
             is who you were yesterday.
           </p>
-          <Link href="/dashboard">
-            Find your plan <ArrowUpRight size={16} />
-          </Link>
         </div>
         <div className="account">
           <div className="avatar">{initials}</div>
