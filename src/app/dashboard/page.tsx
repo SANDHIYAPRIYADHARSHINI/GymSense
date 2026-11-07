@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+"use client";
+import Link from "next/link";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -10,14 +11,62 @@ import {
   Timer,
   Zap,
 } from "lucide-react";
-import { userProgress, workoutGoals } from "@/data/userProgress";
+import { useAuth } from "@/components/auth-provider";
+import { profileView, todayUTC } from "@/lib/firestore/streaks";
+import { profileStats } from "@/lib/social";
+import { workoutPlans } from "@/data/workoutPlans";
+import { exercises } from "@/data/exercises";
+import { getDay, emptyProgress } from "@/lib/workoutProgress";
+import { workoutGoals } from "@/data/userProgress";
 const goalIcons = {
   strength: Dumbbell,
   flame: Flame,
   custom: SlidersHorizontal,
 };
 export default function DashboardPage() {
-  const { user, weeklyStats, lastWorkout } = userProgress;
+  const { profile, progress } = useAuth();
+  if (!profile) return null;
+  const summary = profileStats(
+    profileView(profile, Object.values(progress.activity)),
+    todayUTC(),
+  );
+  const user = { firstName: profile.displayName.split(" ")[0] };
+  const weeklyStats = {
+    workoutsCompleted: summary.weekly.workouts,
+    activeMinutes: summary.weekly.activeMinutes,
+    repsCompleted: summary.weekly.reps,
+    currentStreak: summary.currentStreak,
+    periodLabel: "This week (UTC)",
+  };
+  const currentPlan = workoutPlans.find(
+    (p) => p.id === progress.currentPlanGoal,
+  )!;
+  const planProgress =
+    progress.plans[progress.currentPlanGoal] ?? emptyProgress();
+  const nextDay = currentPlan.days.find(
+    (d) => !planProgress.completedDays.includes(d.day),
+  );
+  const routine = nextDay
+    ? getDay(currentPlan, planProgress, nextDay.day)
+    : null;
+  const nextExercise = routine?.exercises.find(
+    (e) =>
+      !planProgress.completedExercises[routine.day]?.includes(e.exerciseId),
+  );
+  const exercise = exercises.find((e) => e.id === nextExercise?.exerciseId);
+  const lastWorkout =
+    exercise && routine
+      ? {
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          planName: currentPlan.title,
+          day: routine.day,
+          completedExercises:
+            planProgress.completedExercises[routine.day]?.length ?? 0,
+          totalExercises: routine.exercises.length,
+          remainingMinutes: currentPlan.days[routine.day - 1].estimatedMinutes,
+        }
+      : null;
   const cards = [
     ...workoutGoals.map((goal) => ({
       ...goal,
@@ -128,53 +177,59 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
-      <section aria-labelledby="continue-heading">
-        <h2 id="continue-heading" className="mb-5">
-          Continue where you left off
-        </h2>
-        <Link
-          href={`/workout/${lastWorkout.exerciseId}`}
-          className="group flex flex-wrap items-center gap-5 rounded-2xl border border-[#53643d] bg-linear-to-r from-[#303e23] to-[#1b2317] p-6 hover:border-[#ccf66b] md:p-7"
-        >
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#ccf66b] text-[#1e2911]">
-            <Play size={25} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1 basis-48">
-            <span className="card-tag">
-              {lastWorkout.planName} / DAY {lastWorkout.day}
+      {lastWorkout ? (
+        <section aria-labelledby="continue-heading">
+          <h2 id="continue-heading" className="mb-5">
+            Continue where you left off
+          </h2>
+          <Link
+            href={`/workout/${lastWorkout.exerciseId}`}
+            className="group flex flex-wrap items-center gap-5 rounded-2xl border border-[#53643d] bg-linear-to-r from-[#303e23] to-[#1b2317] p-6 hover:border-[#ccf66b] md:p-7"
+          >
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#ccf66b] text-[#1e2911]">
+              <Play size={25} aria-hidden="true" />
             </span>
-            <h3 className="text-xl">{lastWorkout.exerciseName}</h3>
-            <p className="mt-1 text-xs">
-              {lastWorkout.completedExercises} of {lastWorkout.totalExercises}{" "}
-              exercises completed &middot; {lastWorkout.remainingMinutes} min
-              remaining
-            </p>
-            <div
-              className="mt-4 h-1.5 overflow-hidden rounded-full bg-black/30"
-              role="progressbar"
-              aria-label="Sample workout completion"
-              aria-valuenow={lastWorkout.completedExercises}
-              aria-valuemin={0}
-              aria-valuemax={lastWorkout.totalExercises}
-            >
+            <div className="min-w-0 flex-1 basis-48">
+              <span className="card-tag">
+                {lastWorkout.planName} / DAY {lastWorkout.day}
+              </span>
+              <h3 className="text-xl">{lastWorkout.exerciseName}</h3>
+              <p className="mt-1 text-xs">
+                {lastWorkout.completedExercises} of {lastWorkout.totalExercises}{" "}
+                exercises completed &middot; {lastWorkout.remainingMinutes} min
+                remaining
+              </p>
               <div
-                className="h-full rounded-full bg-[#ccf66b]"
-                style={{
-                  width: `${(lastWorkout.completedExercises / lastWorkout.totalExercises) * 100}%`,
-                }}
-              />
+                className="mt-4 h-1.5 overflow-hidden rounded-full bg-black/30"
+                role="progressbar"
+                aria-label="Workout completion"
+                aria-valuenow={lastWorkout.completedExercises}
+                aria-valuemin={0}
+                aria-valuemax={lastWorkout.totalExercises}
+              >
+                <div
+                  className="h-full rounded-full bg-[#ccf66b]"
+                  style={{
+                    width: `${(lastWorkout.completedExercises / lastWorkout.totalExercises) * 100}%`,
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          <span className="flex min-h-11 items-center gap-3 text-sm font-bold text-[#ccf66b]">
-            Resume workout <ChevronRight size={19} aria-hidden="true" />
-          </span>
-        </Link>
-      </section>
+            <span className="flex min-h-11 items-center gap-3 text-sm font-bold text-[#ccf66b]">
+              Resume workout <ChevronRight size={19} aria-hidden="true" />
+            </span>
+          </Link>
+        </section>
+      ) : (
+        <p className="panel">
+          Choose a goal to begin, or return to your plan to finish a day.
+        </p>
+      )}
       <section aria-labelledby="weekly-heading">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 id="weekly-heading">Your week in motion</h2>
           <span className="text-xs text-[#929a8c]">
-            {weeklyStats.periodLabel} &middot; Mock progress
+            {weeklyStats.periodLabel}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
@@ -198,8 +253,7 @@ export default function DashboardPage() {
         </div>
       </section>
       <p className="text-xs text-[#929a8c]">
-        Demo workspace: progress is illustrative and does not update as you
-        train.
+        Stats update from your saved workouts, exercise logs and runs.
       </p>
     </div>
   );

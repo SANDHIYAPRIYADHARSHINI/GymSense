@@ -4,3 +4,7 @@ package-lock.json
 next-env.d.ts
 
 public/mediapipe/wasm
+
+/firestore.rules
+/*-debug.log
+/firebase-debug-test.log

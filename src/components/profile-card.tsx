@@ -28,11 +28,13 @@ export function UserAvatar({
 export function ProfileCard({
   user,
   action,
+  endDate,
 }: {
   user: MockUser;
   action?: React.ReactNode;
+  endDate?: string;
 }) {
-  const stats = profileStats(user);
+  const stats = profileStats(user, endDate);
   const metrics = [
     {
       label: "Current streak",
@@ -101,12 +103,13 @@ export function ProfileCard({
       <ContributionGraph
         key={user.id}
         activity={user.activity}
+        endDate={endDate}
         username={user.username}
       />
       <p className="text-[10px]">
-        Stats use this user’s mock activity history. An active workout, rep
-        session, or run contributes to a streak; an unfinished today keeps
-        yesterday’s streak until the day ends.
+        Stats use saved activity history. An active workout, rep session, or run
+        contributes to a streak; an unfinished today keeps yesterday’s streak
+        until the day ends.
       </p>
     </div>
   );

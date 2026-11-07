@@ -21,13 +21,10 @@ import {
   type RunMode,
 } from "@/lib/run/engine";
 import { requestMotionAccess, StepDetector } from "@/lib/run/steps";
-import {
-  appendRun,
-  completedRun,
-  RUN_STORAGE_KEY,
-  RUNS_UPDATED_EVENT,
-  type SavedRun,
-} from "@/lib/run/storage";
+import { completedRun, type SavedRun } from "@/lib/run/storage";
+import { saveRun } from "@/lib/firestore/records";
+import { useAuth } from "./auth-provider";
+import { cloudError } from "@/lib/firebase";
 import { PageHeading } from "./landing";
 import { RunHistory } from "./run-history";
 const modes = [
@@ -36,6 +33,8 @@ const modes = [
   { id: "ftms", label: "Bluetooth treadmill" },
 ] as const;
 export function RunTracker() {
+  const { user } = useAuth();
+  const saving = useRef(false);
   const engine = useMemo(() => new RunEngine(), []);
   const client = useMemo(() => new FtmsClient(), []);
   const [view, setView] = useState(() => engine.snapshot(0));
@@ -236,20 +235,19 @@ export function RunTracker() {
     setNotice("");
     refresh();
   }
-  function save(run: SavedRun) {
+  async function save(run: SavedRun) {
+    if (!user || saving.current) return;
+    saving.current = true;
+    setPendingSave(run);
+    setNotice("Saving your run...");
     try {
-      localStorage.setItem(
-        RUN_STORAGE_KEY,
-        appendRun(localStorage.getItem(RUN_STORAGE_KEY), run),
-      );
+      await saveRun(user.uid, run);
       setPendingSave(null);
-      setNotice("Run saved locally. It is now in your profile history.");
-      window.dispatchEvent(new Event(RUNS_UPDATED_EVENT));
-    } catch {
-      setPendingSave(run);
-      setNotice(
-        "Run completed, but browser storage could not save it. Keep this page open and retry saving.",
-      );
+      setNotice("Run saved to your account and profile history.");
+    } catch (e) {
+      setNotice(cloudError(e) + " Keep this page open and retry saving.");
+    } finally {
+      saving.current = false;
     }
   }
   function stop() {
@@ -577,7 +575,7 @@ export function RunTracker() {
         </div>
         <p className="mt-5 text-xs" role="status">
           {notice ||
-            "Stop saves a completed run locally. Keep this page open and visible while tracking."}
+            "Stop saves a completed run to your account. Keep this page open and visible while tracking."}
         </p>
       </section>
       {view.mode === "manual" && (

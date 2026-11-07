@@ -1,7 +1,7 @@
 ﻿"use client";
 import Link from "next/link";
 import { exercises as exerciseLibrary } from "@/data/exercises";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -21,59 +21,45 @@ import {
   getDay,
   isDayUnlocked,
   restoreProgress,
-  storageKey,
   toggleExercise,
   type PlanProgress,
 } from "@/lib/workoutProgress";
+import { useAuth } from "./auth-provider";
+import { mutatePlan } from "@/lib/firestore/workouts";
+import { cloudError } from "@/lib/firebase";
+import type { Goal } from "@/lib/firestore/types";
 import { PageHeading } from "./landing";
 import { ExerciseDemo } from "./exercise-demo";
 const libraryIds = new Set(exerciseLibrary.map((ex) => ex.id));
 export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
-  const [progress, setProgress] = useState<PlanProgress>(emptyProgress);
-  const [ready, setReady] = useState(false);
+  const { user, progress: cloudProgress } = useAuth();
+  const progress = restoreProgress(
+    JSON.stringify(cloudProgress.plans[plan.id as Goal] ?? emptyProgress()),
+    plan,
+    libraryIds,
+  );
+  const [busy, setBusy] = useState(false);
+  const ready = !!user && !busy;
   const [storageError, setStorageError] = useState("");
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState(
+    () =>
+      plan.days.find((d) => !progress.completedDays.includes(d.day))?.day ?? 3,
+  );
   const [exerciseId, setExerciseId] = useState(exerciseLibrary[0].id);
   const [sets, setSets] = useState(3);
   const [target, setTarget] = useState(10);
   const [mode, setMode] = useState("reps");
   const [rest, setRest] = useState(60);
-  useEffect(() => {
-    let active = true;
-    queueMicrotask(() => {
-      if (!active) return;
-      try {
-        const saved = restoreProgress(
-          localStorage.getItem(storageKey(plan.id)),
-          plan,
-          libraryIds,
-        );
-        setProgress(saved);
-        setSelectedDay(
-          plan.days.find((day) => !saved.completedDays.includes(day.day))
-            ?.day ?? 3,
-        );
-      } catch {
-        setStorageError(
-          "Browser storage is unavailable. Changes will only last while this page is open.",
-        );
-      }
-      setReady(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, [plan]);
-  function save(next: PlanProgress) {
-    if (!ready) return;
-    setProgress(next);
+  async function save(change: (previous: PlanProgress) => PlanProgress) {
+    if (!ready || !user) return;
+    setBusy(true);
+    setStorageError("");
     try {
-      localStorage.setItem(storageKey(plan.id), JSON.stringify(next));
-      setStorageError("");
-    } catch {
-      setStorageError(
-        "Could not save to browser storage. Your progress will be lost on refresh.",
-      );
+      await mutatePlan(user.uid, plan, change);
+    } catch (e) {
+      setStorageError(cloudError(e));
+    } finally {
+      setBusy(false);
     }
   }
   const day = getDay(plan, progress, selectedDay);
@@ -114,7 +100,12 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
       restSeconds: rest,
       ...(mode === "reps" ? { reps: target } : { durationSeconds: target }),
     };
-    save(editCustomDay(plan, progress, selectedDay, [...day.exercises, item]));
+    save((previous) =>
+      editCustomDay(plan, previous, selectedDay, [
+        ...getDay(plan, previous, selectedDay).exercises,
+        item,
+      ]),
+    );
   }
   return (
     <>
@@ -133,8 +124,8 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
       )}
       <p className="mb-4 text-xs text-[#a5b09b]" role="status">
         {ready
-          ? `${progress.completedDays.length} of 3 days complete. Progress saves on this browser.`
-          : "Loading saved progress..."}
+          ? `${progress.completedDays.length} of 3 days complete. Progress synced to your account.`
+          : "Loading or saving progress..."}
       </p>
       <nav
         aria-label="Workout days"
@@ -241,7 +232,7 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <Link
-                      href={`/workout/${item.exerciseId}`}
+                      href={`/workout/${item.exerciseId}?goal=${plan.id}&day=${selectedDay}`}
                       className="inline-flex min-h-7 items-center gap-2 font-bold hover:text-[#ccf66b]"
                     >
                       {exercise.name}
@@ -262,12 +253,16 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
                     <button
                       type="button"
                       onClick={() =>
-                        save(
+                        save((previous) =>
                           editCustomDay(
                             plan,
-                            progress,
+                            previous,
                             selectedDay,
-                            day.exercises.filter(
+                            getDay(
+                              plan,
+                              previous,
+                              selectedDay,
+                            ).exercises.filter(
                               (ex) => ex.exerciseId !== item.exerciseId,
                             ),
                           ),
@@ -288,10 +283,10 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
                     checked={done}
                     disabled={!ready || completed}
                     onChange={() =>
-                      save(
+                      save((previous) =>
                         toggleExercise(
                           plan,
-                          progress,
+                          previous,
                           selectedDay,
                           item.exerciseId,
                         ),
@@ -416,7 +411,9 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
         disabled={
           !ready || completed || !canCompleteDay(plan, progress, selectedDay)
         }
-        onClick={() => save(completeDay(plan, progress, selectedDay))}
+        onClick={() =>
+          save((previous) => completeDay(plan, previous, selectedDay))
+        }
       >
         <Check size={18} />
         {completed ? "Day Completed" : "Mark Day Complete"}

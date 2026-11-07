@@ -3,48 +3,36 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Footprints } from "lucide-react";
 import { formatPace, formatRunTime } from "@/lib/run/engine";
-import {
-  restoreRuns,
-  RUN_STORAGE_KEY,
-  RUNS_UPDATED_EVENT,
-  type SavedRun,
-} from "@/lib/run/storage";
+import type { SavedRun } from "@/lib/run/storage";
+import { watchRuns } from "@/lib/firestore/records";
+import { useAuth } from "./auth-provider";
+import { cloudError } from "@/lib/firebase";
 const modeLabels = {
   outdoor: "Outdoor GPS",
   manual: "Manual treadmill",
   ftms: "FTMS treadmill",
 };
 export function RunHistory({ compact = false }: { compact?: boolean }) {
+  const { user } = useAuth();
   const [runs, setRuns] = useState<SavedRun[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [all, setAll] = useState(false);
   useEffect(() => {
-    let active = true;
-    function read() {
-      if (!active) return;
-      try {
-        setRuns(restoreRuns(localStorage.getItem(RUN_STORAGE_KEY)));
+    if (!user) return;
+    return watchRuns(
+      user.uid,
+      (runs) => {
+        setRuns(runs);
+        setReady(true);
         setError("");
-      } catch {
-        setError(
-          "Saved runs are unavailable because browser storage is blocked.",
-        );
-      }
-      setReady(true);
-    }
-    queueMicrotask(read);
-    const storage = (event: StorageEvent) => {
-      if (event.key === RUN_STORAGE_KEY || event.key === null) read();
-    };
-    window.addEventListener("storage", storage);
-    window.addEventListener(RUNS_UPDATED_EVENT, read);
-    return () => {
-      active = false;
-      window.removeEventListener("storage", storage);
-      window.removeEventListener(RUNS_UPDATED_EVENT, read);
-    };
-  }, []);
+      },
+      (e) => {
+        setError(cloudError(e));
+        setReady(true);
+      },
+    );
+  }, [user]);
   const visible = runs.slice(0, compact ? 3 : all ? 100 : 10);
   return (
     <section className="mt-8" aria-labelledby="run-history-heading">
@@ -53,7 +41,7 @@ export function RunHistory({ compact = false }: { compact?: boolean }) {
           <p className="eyebrow">YOUR RECORDED MILES</p>
           <h2 id="run-history-heading">Completed run history</h2>
         </div>
-        <span className="pill">SAVED ON THIS BROWSER</span>
+        <span className="pill">SYNCED TO YOUR ACCOUNT</span>
       </div>
       {error && (
         <p role="alert" className="mb-4 text-xs text-amber-200">
@@ -138,8 +126,8 @@ export function RunHistory({ compact = false }: { compact?: boolean }) {
         </button>
       )}
       <p className="mt-4 text-[10px]">
-        Run summaries stay on this browser. GPS coordinates are not saved. These
-        sessions are separate from the sample profile streaks and challenges.
+        Run summaries sync to your account and contribute to activity. GPS
+        coordinates are not saved.
       </p>
     </section>
   );

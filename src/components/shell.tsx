@@ -1,4 +1,5 @@
 "use client";
+import { useAuth } from "./auth-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -23,6 +24,13 @@ const nav = [
 ];
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const { profile } = useAuth();
+  const initials =
+    profile?.displayName
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((s) => s[0])
+      .join("") ?? "GS";
   return (
     <>
       <aside className="sidebar">
@@ -79,10 +87,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
         <div className="account">
-          <div className="avatar">AJ</div>
+          <div className="avatar">{initials}</div>
           <div>
-            <b>Alex Johnson</b>
-            <small>Let�s get stronger</small>
+            <b>{profile?.displayName ?? "GymSense"}</b>
+            <small>Let us get stronger</small>
           </div>
           <Dumbbell size={17} />
         </div>
@@ -95,23 +103,21 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <div className="top-right">
             <span className="demo-pill">
-              <i /> DEMO WORKSPACE
+              <i /> GYMSENSE
             </span>
             <Link
               href="/profile"
               className="avatar small"
               aria-label="Open profile"
             >
-              AJ
+              {initials}
             </Link>
           </div>
         </header>
         <main>{children}</main>
         <footer className="page-footer">
           <span>Make movement a mindset.</span>
-          <span>
-            GYMSENSE � 2026 <span className="lime">?</span>
-          </span>
+          <span>GYMSENSE &copy; 2026</span>
         </footer>
       </div>
       <nav className="bottom-nav">

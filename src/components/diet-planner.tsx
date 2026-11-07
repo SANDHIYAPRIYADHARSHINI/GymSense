@@ -18,20 +18,23 @@ import {
   cuisines,
   defaultPreferences,
   defaultTrackers,
-  DIET_PREFERENCES_KEY,
   dietGoals,
   dietTypes,
   generateDailyPlan,
   localDayKey,
   mealIngredients,
   recipeAllergens,
-  restorePreferences,
-  restoreTrackers,
-  serializePreferences,
-  trackerStorageKey,
   type DailyTrackers,
   type DietPreferences,
 } from "@/lib/diet";
+import { useAuth } from "./auth-provider";
+import {
+  watchDiet,
+  saveDiet,
+  getIntake,
+  saveIntake,
+} from "@/lib/firestore/records";
+import { cloudError } from "@/lib/firebase";
 import { PageHeading } from "./landing";
 const trackerDefinitions = [
   {
@@ -63,109 +66,102 @@ export function DietPlanner() {
   const [preferences, setPreferences] =
     useState<DietPreferences>(defaultPreferences);
   const [trackers, setTrackers] = useState<DailyTrackers>(defaultTrackers);
-  const [ready, setReady] = useState(false);
+  const { user } = useAuth();
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const ready = loaded && !busy;
   const [storageError, setStorageError] = useState("");
   const [status, setStatus] = useState("");
   const [variation, setVariation] = useState(0);
   const day = useRef("");
+  const draftPreferences = useRef<DietPreferences | null>(null);
   useEffect(() => {
+    if (!user) return;
     let active = true;
-    function loadDay() {
-      if (!active) return;
+    async function loadDay() {
       const today = localDayKey();
-      if (today === day.current) return;
-      day.current = today;
+      if (day.current === today) return;
       try {
-        setTrackers(
-          restoreTrackers(localStorage.getItem(trackerStorageKey(today))),
-        );
-      } catch {
-        setTrackers({ ...defaultTrackers });
-        setStorageError(
-          "Browser storage is unavailable. Your changes will last only for this page visit.",
-        );
+        const saved = await getIntake(user!.uid, today);
+        if (active) {
+          day.current = today;
+          setTrackers(saved ?? { ...defaultTrackers });
+        }
+      } catch (e) {
+        if (active) setStorageError(cloudError(e));
       }
     }
-    queueMicrotask(() => {
-      if (!active) return;
-      try {
-        setPreferences(
-          restorePreferences(localStorage.getItem(DIET_PREFERENCES_KEY)),
-        );
-      } catch {
-        setStorageError(
-          "Browser storage is unavailable. Your changes will last only for this page visit.",
-        );
-      }
-      loadDay();
-      setReady(true);
-    });
-    const interval = setInterval(loadDay, 60000);
-    const visible = () => {
-      if (!document.hidden) loadDay();
-    };
-    document.addEventListener("visibilitychange", visible);
+    const stop = watchDiet(
+      user.uid,
+      (p) => {
+        if (!draftPreferences.current) setPreferences(p);
+        setLoaded(true);
+      },
+      (e) => setStorageError(cloudError(e)),
+    );
+    void loadDay();
+    const interval = setInterval(() => void loadDay(), 60000);
     return () => {
       active = false;
+      stop();
       clearInterval(interval);
-      document.removeEventListener("visibilitychange", visible);
     };
-  }, []);
+  }, [user]);
   const plan = useMemo(
     () => generateDailyPlan(preferences, variation),
     [preferences, variation],
   );
-  function updatePreferences(next: DietPreferences) {
-    if (!ready) return;
+  async function updatePreferences(next: DietPreferences) {
+    if (!ready || !user) return;
+    draftPreferences.current = next;
     setPreferences(next);
     setVariation(0);
+    setBusy(true);
+    setStorageError("");
+    setStatus("Saving preferences...");
     try {
-      localStorage.setItem(DIET_PREFERENCES_KEY, serializePreferences(next));
-      setStatus("Preferences saved on this browser.");
-      setStorageError("");
-    } catch {
-      setStorageError(
-        "Could not save preferences. They will be lost when this page is refreshed.",
-      );
+      await saveDiet(user.uid, next);
+      draftPreferences.current = null;
+      setStatus("Preferences synced to your account.");
+    } catch (e) {
+      setStorageError(cloudError(e));
+      setStatus("Not saved. Retry below.");
+    } finally {
+      setBusy(false);
     }
   }
-  function updateTracker(
+  async function updateTracker(
     key: keyof DailyTrackers,
     value: number | ((current: number) => number),
   ) {
-    if (!ready) return;
-    const today = localDayKey();
-    let base = trackers;
-    if (today !== day.current) {
-      day.current = today;
-      try {
-        base = restoreTrackers(localStorage.getItem(trackerStorageKey(today)));
-      } catch {
-        base = { ...defaultTrackers };
-      }
-    }
-    const amount = typeof value === "function" ? value(base[key]) : value;
-    const next = {
-      ...base,
-      [key]: Math.min(
-        100000,
-        Math.max(
-          key.endsWith("Target") ? 1 : 0,
-          Number.isFinite(amount) ? amount : 0,
-        ),
-      ),
-    };
-    setTrackers(next);
+    if (!ready || !user) return;
+    setBusy(true);
+    setStorageError("");
     try {
-      localStorage.setItem(
-        trackerStorageKey(today),
-        JSON.stringify({ version: 1, trackers: next }),
-      );
-      setStorageError("");
-    } catch {
-      setStorageError(
-        "Could not save daily trackers. Your entries will be lost on refresh.",
-      );
+      const today = localDayKey();
+      let base = trackers;
+      if (day.current !== today) {
+        base = (await getIntake(user.uid, today)) ?? { ...defaultTrackers };
+        day.current = today;
+      }
+      const amount = typeof value === "function" ? value(base[key]) : value;
+      const next = {
+        ...base,
+        [key]: Math.min(
+          100000,
+          Math.max(
+            key.endsWith("Target") ? 1 : 0,
+            Number.isFinite(amount) ? amount : 0,
+          ),
+        ),
+      };
+      await saveIntake(user.uid, today, next);
+      setTrackers(next);
+      setStatus("Daily intake saved.");
+    } catch (e) {
+      setStorageError(cloudError(e));
+    } finally {
+      setBusy(false);
     }
   }
   function select<K extends keyof DietPreferences>(
@@ -181,6 +177,15 @@ export function DietPlanner() {
         title="Your plate. Your preferences."
         description="Build a simple daily menu around the food you enjoy, then track what you actually consume."
       />
+      {storageError && (
+        <button
+          className="button secondary mb-4"
+          disabled={!ready}
+          onClick={() => void updatePreferences(preferences)}
+        >
+          Retry saving preferences
+        </button>
+      )}
       {storageError && (
         <p
           role="alert"
@@ -362,7 +367,7 @@ export function DietPlanner() {
           className="mt-4 min-h-5 text-xs text-[#bbd69d]"
         >
           {ready
-            ? status || "Preferences are saved locally as you make changes."
+            ? status || "Preferences sync to your account as you make changes."
             : "Loading your saved preferences..."}
         </p>
       </section>

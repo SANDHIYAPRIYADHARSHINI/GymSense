@@ -1,27 +1,94 @@
 ﻿"use client";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
 import type { Exercise } from "@/data/exercises";
+import { useAuth } from "./auth-provider";
+import {
+  watchExerciseLogs,
+  saveExerciseLog,
+  removeExerciseLog,
+} from "@/lib/firestore/records";
+import { cloudError } from "@/lib/firebase";
+import type { Goal } from "@/lib/firestore/types";
 import { PageHeading } from "./landing";
 import { PoseCounter } from "./pose-counter";
 import { ExerciseDemo } from "./exercise-demo";
-type LoggedSet = { id: number; value: number; unit: "reps" | "seconds" };
+type LoggedSet = { id: string; value: number; unit: "reps" | "seconds" };
 export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
   const [unit, setUnit] = useState<"reps" | "seconds">(
     exercise.repCountingRules.mode === "hold" ? "seconds" : "reps",
   );
   const [count, setCount] = useState(0);
   const [loggedSets, setLoggedSets] = useState<LoggedSet[]>([]);
-  const nextId = useRef(1);
-  function logSet(e: React.FormEvent) {
+  const { user, profile } = useAuth();
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [formScore, setFormScore] = useState<number | null>(null);
+  const pendingId = useRef<string | null>(null);
+  const [pending, setPending] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    return watchExerciseLogs(
+      user.uid,
+      (logs) =>
+        setLoggedSets(
+          logs
+            .filter((l) => l.exerciseId === exercise.id)
+            .map((l) => ({
+              id: l.id,
+              value: l.reps || l.durationSeconds,
+              unit: l.reps ? "reps" : "seconds",
+            })),
+        ),
+      (e) => setMessage(cloudError(e)),
+    );
+  }, [user, exercise.id]);
+  async function logSet(e: React.FormEvent) {
     e.preventDefault();
-    if (!Number.isInteger(count) || count < 1 || count > 9999) return;
-    setLoggedSets((current) => [
-      ...current,
-      { id: nextId.current++, value: count, unit },
-    ]);
-    setCount(0);
+    if (
+      !user ||
+      !profile ||
+      busy ||
+      !Number.isInteger(count) ||
+      count < 1 ||
+      count > 9999
+    )
+      return;
+    setBusy(true);
+    setMessage("Saving set...");
+    const params = new URLSearchParams(window.location.search);
+    const selected = params.get("goal");
+    const goal = (
+      selected && ["weight-gain", "weight-loss", "custom"].includes(selected)
+        ? selected
+        : profile.goal
+    ) as Goal;
+    const day = params.get("day");
+    const id = pendingId.current ?? crypto.randomUUID();
+    pendingId.current = id;
+    setPending(true);
+    try {
+      await saveExerciseLog(user.uid, id, {
+        exerciseId: exercise.id,
+        planGoal: goal,
+        dayId:
+          day && ["1", "2", "3"].includes(day) ? goal + "-day-" + day : null,
+        sets: 1,
+        reps: unit === "reps" ? count : 0,
+        durationSeconds: unit === "seconds" ? count : 0,
+        formScore,
+      });
+      pendingId.current = null;
+      setPending(false);
+      setCount(0);
+      setFormScore(null);
+      setMessage("Set saved to your account.");
+    } catch (e) {
+      setMessage(cloudError(e));
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <>
@@ -50,7 +117,9 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
           <ExerciseDemo exercise={exercise} />
           <PoseCounter
             exercise={exercise}
-            onUseCount={(reps) => {
+            onUseCount={(reps, score) => {
+              if (busy || pending) return;
+              setFormScore(score ?? null);
               setUnit("reps");
               setCount(reps);
             }}
@@ -87,66 +156,75 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
           <section className="panel" aria-labelledby="logger-heading">
             <h2 id="logger-heading">Manual set &amp; rep logger</h2>
             <p className="mt-2 text-xs">
-              Log what you completed. Entries last for this page visit and do
-              not complete plan exercises automatically.
+              Log what you completed. Entries sync to your account; mark plan
+              exercises complete separately.
+            </p>
+            <p role="status" className="mt-4">
+              {message}
             </p>
             <form onSubmit={logSet} className="mt-5">
-              <label className="text-xs" htmlFor="log-unit">
-                What are you logging?
-                <select
-                  id="log-unit"
-                  value={unit}
-                  className="plan-input"
-                  onChange={(e) => {
-                    setUnit(e.target.value as "reps" | "seconds");
-                    setCount(0);
-                  }}
-                >
-                  <option value="reps">Repetitions</option>
-                  <option value="seconds">Hold duration (seconds)</option>
-                </select>
-              </label>
-              <label htmlFor="set-count" className="mt-5 block text-xs">
-                {unit === "reps" ? "Reps in this set" : "Seconds held"}
-              </label>
-              <div className="mt-3 flex items-center gap-3">
-                <button
-                  type="button"
-                  className="icon-button shrink-0"
-                  disabled={count === 0}
-                  aria-label={`Decrease ${unit}`}
-                  onClick={() => setCount((value) => Math.max(0, value - 1))}
-                >
-                  <Minus size={18} />
-                </button>
-                <input
-                  id="set-count"
-                  className="plan-input mt-0 text-center"
-                  type="number"
-                  min="0"
-                  max="9999"
-                  step="1"
-                  required
-                  value={count}
-                  onChange={(e) => setCount(Number(e.target.value))}
-                />
-                <button
-                  type="button"
-                  className="icon-button plus shrink-0"
-                  aria-label={`Increase ${unit}`}
-                  disabled={count >= 9999}
-                  onClick={() => setCount((value) => Math.min(9999, value + 1))}
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
+              <fieldset disabled={busy || pending} className="min-w-0">
+                <label className="text-xs" htmlFor="log-unit">
+                  What are you logging?
+                  <select
+                    id="log-unit"
+                    value={unit}
+                    className="plan-input"
+                    onChange={(e) => {
+                      setUnit(e.target.value as "reps" | "seconds");
+                      setCount(0);
+                    }}
+                  >
+                    <option value="reps">Repetitions</option>
+                    <option value="seconds">Hold duration (seconds)</option>
+                  </select>
+                </label>
+                <label htmlFor="set-count" className="mt-5 block text-xs">
+                  {unit === "reps" ? "Reps in this set" : "Seconds held"}
+                </label>
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    type="button"
+                    className="icon-button shrink-0"
+                    disabled={count === 0}
+                    aria-label={`Decrease ${unit}`}
+                    onClick={() => setCount((value) => Math.max(0, value - 1))}
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <input
+                    id="set-count"
+                    className="plan-input mt-0 text-center"
+                    type="number"
+                    min="0"
+                    max="9999"
+                    step="1"
+                    required
+                    value={count}
+                    onChange={(e) => setCount(Number(e.target.value))}
+                  />
+                  <button
+                    type="button"
+                    className="icon-button plus shrink-0"
+                    aria-label={`Increase ${unit}`}
+                    disabled={count >= 9999}
+                    onClick={() =>
+                      setCount((value) => Math.min(9999, value + 1))
+                    }
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </fieldset>
               <button
                 type="submit"
                 className="button primary full mt-5 disabled:opacity-40"
-                disabled={!Number.isInteger(count) || count < 1 || count > 9999}
+                disabled={
+                  busy || !Number.isInteger(count) || count < 1 || count > 9999
+                }
               >
                 <Plus size={17} />
-                Log set
+                {pending ? "Retry saving set" : "Log set"}
               </button>
             </form>
             <p
@@ -180,11 +258,14 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
                     type="button"
                     aria-label={`Remove set ${index + 1}`}
                     className="flex min-h-11 min-w-11 items-center justify-center text-[#a9b99b] hover:text-red-300"
-                    onClick={() =>
-                      setLoggedSets((current) =>
-                        current.filter((item) => item.id !== set.id),
-                      )
-                    }
+                    disabled={busy}
+                    onClick={() => {
+                      if (!user) return;
+                      setBusy(true);
+                      void removeExerciseLog(user.uid, set.id)
+                        .catch((e) => setMessage(cloudError(e)))
+                        .finally(() => setBusy(false));
+                    }}
                   >
                     <Trash2 size={16} />
                   </button>

@@ -19,7 +19,7 @@ export function PoseCounter({
   onUseCount,
 }: {
   exercise: Exercise;
-  onUseCount: (reps: number) => void;
+  onUseCount: (reps: number, score?: number | null) => void;
 }) {
   const config = exercise.liveCounter;
   const engine = useMemo(
@@ -544,7 +544,7 @@ export function PoseCounter({
                 type="button"
                 className="mt-3 min-h-11 text-xs text-[#ccf66b] disabled:opacity-40"
                 disabled={!score.acceptedReps}
-                onClick={() => onUseCount(score.acceptedReps)}
+                onClick={() => onUseCount(score.acceptedReps, score.score)}
               >
                 Use set reps in manual logger
               </button>
