@@ -625,7 +625,7 @@ main {
 .section-heading h2 {
   font-size: 23px;
 }
-.section-heading > a {
+.section-heading > a:not(.button) {
   display: flex;
   align-items: center;
   gap: 12px;
