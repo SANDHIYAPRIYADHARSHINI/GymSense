@@ -1,10 +1,29 @@
 ﻿"use client";
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
-import { Dumbbell, Maximize2, Pause, Play, X } from "lucide-react";
+import { Dumbbell, Maximize2, Pause, Play, X, Youtube } from "lucide-react";
 import type { Exercise } from "@/data/exercises";
 import { resolveDemoAsset } from "@/data/animationAssets";
 import { DEMO_OPEN_EVENT } from "@/lib/demo";
+function YouTubeButton({ exercise }: { exercise: Exercise }) {
+  return (
+    <a
+      href={exercise.youtubeVideo.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="button secondary"
+      title={
+        exercise.youtubeVideo.title +
+        " ? " +
+        exercise.youtubeVideo.channel +
+        " (opens in a new tab)"
+      }
+      onClick={() => window.dispatchEvent(new Event(DEMO_OPEN_EVENT))}
+    >
+      <Youtube size={18} aria-hidden="true" /> YouTube
+    </a>
+  );
+}
 function DemoVisual({
   exercise,
   paused,
@@ -101,7 +120,10 @@ export function ExerciseDemo({
   return (
     <>
       {triggerOnly ? (
-        watchButton
+        <div className="flex flex-wrap items-center gap-3">
+          {watchButton}
+          <YouTubeButton exercise={exercise} />
+        </div>
       ) : (
         <section
           className="panel"
@@ -123,9 +145,14 @@ export function ExerciseDemo({
               ? "Watch the movement, then follow the numbered instructions. The animation is a simplified guide."
               : "This exercise has a written guide while its animation is being prepared."}
           </p>
+          <p className="mt-2 text-xs text-[#a9ba9a]">
+            YouTube tutorial by {exercise.youtubeVideo.channel}. Opens in a new
+            tab.
+          </p>
           <div className="mt-5 flex flex-wrap gap-3">
             {watchButton}
             {pauseButton}
+            <YouTubeButton exercise={exercise} />
           </div>
         </section>
       )}
@@ -172,6 +199,7 @@ export function ExerciseDemo({
                 />
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
                   {pauseButton}
+                  <YouTubeButton exercise={exercise} />
                   <span className="text-xs text-[#a9ba9a]">
                     {hasDemo
                       ? "Looping guide / reduced motion supported"

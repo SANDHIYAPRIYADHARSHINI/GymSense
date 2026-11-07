@@ -10,7 +10,7 @@ GymSense brings workout instructions, rep counting, food preferences, runs, and 
 
 - Firebase email/password sign-up, login, password reset, logout, and protected application screens.
 - Three-day Weight Gain and Weight Loss plans, plus editable Custom routines with persistent day unlocking.
-- A typed library of 24 exercises, six animated demos, and camera counting for squats, push-ups, and jumping jacks.
+- A typed library of 24 exercises, 24 animated demos, and camera counting for squats, push-ups, and jumping jacks.
 - Tempo/form cues, optional local speech, per-set scores, and saved exercise logs.
 - Dietary preferences and daily intake stored privately in Firestore; sample meals honor diet/allergy filters.
 - GPS runs, estimated steps, manual treadmill sessions, optional FTMS Bluetooth telemetry, and synced run history.
@@ -187,6 +187,14 @@ Open the demo workspace or prepare a signed-in Firebase account, using desktop C
 Camera reps do not automatically check plan exercises. Log a set explicitly to save it. If a camera is unavailable, use the animation/manual logger. Verify cross-browser sync by signing in to the same account in a second browser.
 
 Explore `/exercises` for filters, `/plan/custom` for editable routines, `/diet` for meal preferences, `/run` for a hardware-free manual treadmill session, and `/friends` for a request exchange between two test accounts.
+
+## Exercise demonstrations and YouTube
+
+Every exercise in the 24-item library has its own lightweight looping SVG demonstration and a static poster for pause/reduced-motion support. All assets combined are under 96 KB. Use **Watch demo** for the fullscreen instructions and animation, or **YouTube** to open a matching video in a new tab. Both controls are available from exercise details and plan rows.
+
+YouTube videos are linked rather than embedded: no YouTube player, thumbnail, or video request loads until you click. Opening a tutorial stops any active camera counter. Video metadata lives in `src/data/exerciseVideos.ts`; the checked links and creator credits are listed in [docs/EXERCISE_VIDEOS.md](docs/EXERCISE_VIDEOS.md). External videos remain under their creators' control and may change availability.
+
+Regenerate local demos, posters, and their manifest with `node scripts/generate-demos.mjs`. SVGs use compatible pose keyframes, loop back to their starting position, and respect reduced-motion preferences. These are simplified movement guides; the written instructions and human demonstrations provide additional context.
 
 ## Known limitations
 

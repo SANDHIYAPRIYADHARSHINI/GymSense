@@ -2,19 +2,12 @@
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
 import { demoAssets, resolveDemoAsset } from "../src/data/animationAssets.ts";
-import { findExercise } from "../src/data/exercises.ts";
+import { exercises, findExercise } from "../src/data/exercises.ts";
 const file = (path) => new URL("../public" + path, import.meta.url);
-test("six exercise demos resolve to optimized local SVGs and static posters", () => {
+test("all catalog exercise demos resolve to optimized local SVGs and static posters", () => {
   assert.deepEqual(
     Object.keys(demoAssets).sort(),
-    [
-      "squats",
-      "push-ups",
-      "jumping-jacks",
-      "lunges",
-      "plank",
-      "biceps-curls",
-    ].sort(),
+    exercises.map((ex) => ex.id).sort(),
   );
   let total = 0;
   for (const [id, asset] of Object.entries(demoAssets)) {
@@ -40,7 +33,7 @@ test("six exercise demos resolve to optimized local SVGs and static posters", ()
     const poster = readFileSync(file(asset.posterPath), "utf8");
     assert.ok(!poster.includes("<animate"));
   }
-  assert.ok(total < 24000, `Demos and posters total ${total} bytes`);
+  assert.ok(total < 96000, `Demos and posters total ${total} bytes`);
 });
 test("animation timelines return to their start with compatible path commands", () => {
   for (const asset of Object.values(demoAssets)) {
@@ -68,10 +61,7 @@ test("animation timelines return to their start with compatible path commands", 
   }
 });
 test("missing or mismatched animation paths resolve to the placeholder without a request", () => {
-  assert.equal(
-    resolveDemoAsset("burpees", findExercise("burpees").animationPath),
-    null,
-  );
+  assert.equal(resolveDemoAsset("burpees", "/animations/missing.svg"), null);
   assert.equal(resolveDemoAsset("squats", "/animations/missing.svg"), null);
   assert.equal(resolveDemoAsset("missing", "/animations/missing.svg"), null);
 });

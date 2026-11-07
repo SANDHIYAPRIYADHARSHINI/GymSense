@@ -1,3 +1,4 @@
+import { exerciseVideos, type ExerciseVideo } from "./exerciseVideos.ts";
 import { demoAssets } from "./animationAssets.ts";
 export type MuscleGroup =
   | "Chest"
@@ -137,6 +138,7 @@ export type Exercise = {
     validationStatus: "prototype";
   };
   animationPath: `/animations/${string}.svg`;
+  youtubeVideo: ExerciseVideo;
   liveCounter?: LiveCounterConfig;
   coaching: CoachingDefinition;
 };
@@ -873,6 +875,7 @@ export const exercises: Exercise[] = seeds.map((seed) => {
       countPerSide: seed.perSide ?? false,
       validationStatus: "prototype",
     },
+    youtubeVideo: exerciseVideos[seed.id],
     animationPath:
       demoAssets[seed.id]?.animationPath ??
       "/animations/stickman-placeholder.svg",
