@@ -134,3 +134,40 @@ test("Firebase login and demo re-entry work without configuration", async ({
     page.getByRole("heading", { name: /Welcome back, Alex/ }),
   ).toBeVisible();
 });
+
+test("Home and dashboard agree on plan labels and render clean punctuation", async ({
+  page,
+}) => {
+  const goals = [
+    ["Weight Gain", "weight-gain"],
+    ["Weight Loss", "weight-loss"],
+    ["Custom Plan", "custom"],
+  ] as const;
+  for (const path of ["/", "/dashboard"]) {
+    await page.goto(path);
+    for (const [name, id] of goals) {
+      const link = page
+        .locator("main")
+        .getByRole("link")
+        .filter({ has: page.getByRole("heading", { name, exact: true }) });
+      await expect(link).toHaveAttribute("href", "/plan/" + id);
+    }
+    expect(await page.locator("main").innerText()).not.toContain(
+      String.fromCharCode(0xfffd),
+    );
+    if (path === "/") {
+      await expect(page.locator(".floating-chip small")).toHaveText(
+        "You've got this.",
+      );
+      await expect(
+        page.getByRole("heading", { name: /You don't have to be extreme/ }),
+      ).toBeVisible();
+    }
+  }
+  for (const [name, id] of goals) {
+    await page.goto("/plan/" + id);
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+  }
+});

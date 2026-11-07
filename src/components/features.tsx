@@ -8,7 +8,7 @@ export function Dashboard() {
       <PageHeading
         eyebrow="YOUR NEXT CHAPTER"
         title="One goal. A thousand possibilities."
-        description="Pick your focus. We�ll bring the plan. You bring the energy."
+        description="Pick your focus. We'll bring the plan. You bring the energy."
       />
       <GoalCards />
       <div className="panel callout">

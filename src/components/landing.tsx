@@ -2,7 +2,8 @@ import Link from "next/link";
 import {
   ArrowRight,
   ArrowUpRight,
-  Activity,
+  SlidersHorizontal,
+  Utensils,
   Dumbbell,
   Flame,
   Target,
@@ -11,7 +12,7 @@ import {
   Check,
   MoveUpRight,
 } from "lucide-react";
-import { goals } from "@/data/mock";
+import { workoutGoals as goals } from "@/data/userProgress";
 export function PageHeading({
   eyebrow,
   title,
@@ -42,7 +43,13 @@ export function GoalCards() {
         >
           <div className="goal-top">
             <span className="icon-box">
-              {i === 0 ? <Dumbbell /> : i === 1 ? <Flame /> : <Activity />}
+              {i === 0 ? (
+                <Dumbbell />
+              ) : i === 1 ? (
+                <Flame />
+              ) : (
+                <SlidersHorizontal />
+              )}
             </span>
             <ArrowUpRight size={20} />
           </div>
@@ -72,7 +79,7 @@ export function Landing() {
           <p>Your next chapter starts with one good workout.</p>
         </div>
         <span className="date-chip">
-          <span className="lime">?</span> EVERY REP COUNTS
+          <Zap size={14} className="lime" aria-hidden="true" /> EVERY REP COUNTS
         </span>
       </div>
       <section className="hero">
@@ -129,7 +136,7 @@ export function Landing() {
             </span>
             <div>
               <b>One more rep.</b>
-              <small>You�ve got this.</small>
+              <small>You&apos;ve got this.</small>
             </div>
             <Check size={15} />
           </div>
@@ -161,7 +168,7 @@ export function Landing() {
           {
             icon: Timer,
             label: "YOUR PACE",
-            value: "20�40 min",
+            value: "20–40 min",
             note: "Make time for yourself",
           },
           {
@@ -201,7 +208,7 @@ export function Landing() {
           <div>
             <span className="card-tag">THE DAILY REMINDER</span>
             <h3>
-              You don�t have to be extreme.
+              You don&apos;t have to be extreme.
               <br />
               Just consistent.
             </h3>
@@ -221,7 +228,7 @@ export function Landing() {
             </span>
           </div>
           <span className="food-art" aria-hidden="true">
-            ??
+            <Utensils size={76} strokeWidth={1.4} />
           </span>
         </Link>
       </section>
