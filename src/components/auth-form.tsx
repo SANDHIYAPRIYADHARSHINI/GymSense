@@ -10,7 +10,7 @@ import { createProfile, normalizeUsername } from "@/lib/firestore/users";
 import type { Goal } from "@/lib/firestore/types";
 import { useAuth } from "./auth-provider";
 export function AuthForm({ setupOnly = false }: { setupOnly?: boolean }) {
-  const { user, logout } = useAuth();
+  const { user, logout, enterDemo } = useAuth();
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login"),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -61,6 +61,15 @@ export function AuthForm({ setupOnly = false }: { setupOnly?: boolean }) {
           ? "Your sign-in account is ready. Choose a unique username to continue."
           : "Your progress, synced to your account."}
       </p>
+      {!setupOnly && (
+        <button
+          type="button"
+          className="button secondary mb-5 full"
+          onClick={enterDemo}
+        >
+          Continue in demo mode
+        </button>
+      )}
       <form onSubmit={submit} className="panel login-form">
         {!setupOnly && (
           <>

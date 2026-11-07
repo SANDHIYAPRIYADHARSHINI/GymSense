@@ -9,13 +9,26 @@ import {
   type UserProfile,
   type WorkoutProgress,
 } from "@/lib/firestore/types";
+import {
+  DEMO_USER,
+  demoPreference,
+  saveDemoPreference,
+  setDemoSession,
+  demoSnapshot,
+  watchDemo,
+  resetDemo,
+  demoStorageWarning,
+} from "@/lib/demo/store";
 import { AuthForm } from "./auth-form";
 type AuthState = {
-  user: User | null;
+  user: Pick<User, "uid" | "email"> | null;
   profile: UserProfile | null;
   progress: WorkoutProgress;
   loading: boolean;
   error: string;
+  isDemo: boolean;
+  enterDemo: () => void;
+  resetDemoData: () => void;
   logout: () => Promise<void>;
 };
 const Context = createContext<AuthState | null>(null);
@@ -25,15 +38,25 @@ export function useAuth() {
   return value;
 }
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null),
+  const [user, setUser] = useState<AuthState["user"]>(null),
     [profile, setProfile] = useState<UserProfile | null>(null),
     [progress, setProgress] = useState<WorkoutProgress>(emptyWorkoutProgress),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0),
-    [offline, setOffline] = useState(false);
+  const [demo, setDemo] = useState<boolean | null>(null),
+    [attempt, setAttempt] = useState(0),
+    [offline, setOffline] = useState(false),
+    [epoch, setEpoch] = useState(0);
+  const router = useRouter();
   useEffect(() => {
-    const online = () => setOffline(!navigator.onLine);
+    const preference = demoPreference();
+    queueMicrotask(() =>
+      setDemo(
+        preference === "demo" ||
+          (!firebaseConfigured && preference !== "firebase"),
+      ),
+    );
+    const online = () => setOffline(navigator.onLine === false);
     queueMicrotask(online);
     window.addEventListener("online", online);
     window.addEventListener("offline", online);
@@ -43,11 +66,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
   useEffect(() => {
+    if (demo === null) return;
+    setDemoSession(demo);
+    if (demo) {
+      return watchDemo(() => {
+        const data = demoSnapshot();
+        setUser(DEMO_USER);
+        setProfile({ ...data.profile });
+        setProgress({ ...data.progress });
+        setLoading(false);
+        setError("");
+      });
+    }
     if (!firebaseConfigured) {
       queueMicrotask(() => {
+        setUser(null);
+        setProfile(null);
+        setProgress(emptyWorkoutProgress());
         setLoading(false);
         setError(
-          "Firebase is not configured. Set the six variables in .env.local and restart the app.",
+          "Firebase sign-in needs project configuration. You can explore every feature in demo mode now.",
         );
       });
       return;
@@ -56,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       stopProgress = () => {};
     try {
       const { auth, db } = firebaseClient();
-      const unsubscribe = onAuthStateChanged(
+      const stopAuth = onAuthStateChanged(
         auth,
         (next) => {
           stopProfile();
@@ -105,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       );
       return () => {
-        unsubscribe();
+        stopAuth();
         stopProfile();
         stopProgress();
       };
@@ -115,17 +153,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       });
     }
-  }, [attempt]);
-  const logout = async () => {
-    await signOut(firebaseClient().auth);
+  }, [demo, attempt]);
+  function enterDemo() {
+    saveDemoPreference("demo");
+    setLoading(true);
+    setError("");
+    setDemo(true);
+  }
+  function resetDemoData() {
+    resetDemo();
+    setEpoch((e) => e + 1);
+  }
+  async function logout() {
+    if (demo) {
+      saveDemoPreference("firebase");
+      setLoading(true);
+      setDemo(false);
+      setDemoSession(false);
+    } else await signOut(firebaseClient().auth);
+    setUser(null);
     setProfile(null);
     setProgress(emptyWorkoutProgress());
-  };
+    router.replace("/login");
+  }
   return (
     <Context.Provider
-      value={{ user, profile, progress, loading, error, logout }}
+      value={{
+        user,
+        profile,
+        progress,
+        loading,
+        error,
+        isDemo: demo === true,
+        enterDemo,
+        resetDemoData,
+        logout,
+      }}
     >
-      {offline && (
+      {offline && !demo && (
         <p role="status" className="panel">
           Offline. Previously loaded data may be visible; reconnect before
           saving changes.
@@ -137,9 +202,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAttempt((n) => n + 1);
         }}
       >
-        {children}
+        <div key={`${demo}:${epoch}`}>{children}</div>
       </AuthGate>
     </Context.Provider>
+  );
+}
+export function DemoBanner() {
+  const { isDemo, resetDemoData, logout } = useAuth();
+  if (!isDemo) return null;
+  return (
+    <section
+      aria-label="Demo mode"
+      className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-[#ccf66b]/30 bg-[#ccf66b]/5 p-4 text-sm"
+    >
+      <div className="min-w-48 flex-1">
+        <strong className="text-[#ccf66b]">DEMO MODE</strong>
+        <p className="mt-1 text-xs">
+          Sample account. Changes stay in this tab and never sync to Firebase.
+          {demoStorageWarning()
+            ? " Browser storage is blocked; changes will reset on refresh."
+            : " Refresh keeps this tab's demo progress."}
+        </p>
+      </div>
+      <button
+        type="button"
+        className="button secondary"
+        onClick={resetDemoData}
+      >
+        Reset demo
+      </button>
+      <button
+        type="button"
+        className="button secondary"
+        onClick={() => void logout()}
+      >
+        Firebase login
+      </button>
+    </section>
   );
 }
 function AuthGate({
@@ -149,7 +248,7 @@ function AuthGate({
   children: React.ReactNode;
   retry: () => void;
 }) {
-  const { user, profile, loading, error, logout } = useAuth();
+  const { user, profile, loading, error, logout, enterDemo } = useAuth();
   const path = usePathname(),
     router = useRouter();
   const protectedRoute = [
@@ -171,24 +270,39 @@ function AuthGate({
   if (loading)
     return (
       <main className="panel" role="status">
-        Loading your account...
+        Loading your workspace...
       </main>
     );
   if (error)
     return (
       <main className="panel">
-        <h1>Account unavailable</h1>
-        <p role="alert">{error}</p>
-        <button className="button secondary" onClick={retry}>
-          Retry
-        </button>
-        {user && (
-          <button
-            className="button secondary"
-            onClick={() => void logout().catch(() => {})}
-          >
-            Sign out
+        <h1>{firebaseConfigured ? "Account unavailable" : "Try GymSense"}</h1>
+        <p role="alert" className="my-4">
+          {error}
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button className="button primary" onClick={enterDemo}>
+            Continue in demo mode
           </button>
+          {firebaseConfigured && (
+            <button className="button secondary" onClick={retry}>
+              Retry Firebase
+            </button>
+          )}
+          {user && (
+            <button
+              className="button secondary"
+              onClick={() => void logout().catch(() => {})}
+            >
+              Sign out
+            </button>
+          )}
+        </div>
+        {!firebaseConfigured && (
+          <p className="mt-5 text-xs">
+            For a real account, fill the six Firebase values in .env.local and
+            restart the server. Demo mode needs no account or configuration.
+          </p>
         )}
       </main>
     );

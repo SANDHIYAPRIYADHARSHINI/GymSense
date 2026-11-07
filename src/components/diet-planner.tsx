@@ -66,7 +66,7 @@ export function DietPlanner() {
   const [preferences, setPreferences] =
     useState<DietPreferences>(defaultPreferences);
   const [trackers, setTrackers] = useState<DailyTrackers>(defaultTrackers);
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const ready = loaded && !busy;
@@ -122,7 +122,11 @@ export function DietPlanner() {
     try {
       await saveDiet(user.uid, next);
       draftPreferences.current = null;
-      setStatus("Preferences synced to your account.");
+      setStatus(
+        isDemo
+          ? "Demo preferences saved in this tab."
+          : "Preferences synced to your account.",
+      );
     } catch (e) {
       setStorageError(cloudError(e));
       setStatus("Not saved. Retry below.");
@@ -367,7 +371,10 @@ export function DietPlanner() {
           className="mt-4 min-h-5 text-xs text-[#bbd69d]"
         >
           {ready
-            ? status || "Preferences sync to your account as you make changes."
+            ? status ||
+              (isDemo
+                ? "Demo preferences stay in this tab."
+                : "Preferences sync to your account as you make changes.")
             : "Loading your saved preferences..."}
         </p>
       </section>

@@ -7,6 +7,8 @@ The current setup, architecture, Firebase security model, and migration behavior
 - Browser camera, motion, GPS, and Bluetooth processing remain local. Only saved summaries are synced.
 - Plans enforce sequential day completion. Camera reps must be explicitly logged; plan exercise checkboxes remain a separate action.
 - SVG demonstrations and manual exercise logging remain available when camera counting is unsupported.
-- Real account activity drives profile graphs and weekly challenges; no mock user statistics appear in the authenticated screens.
+- Real account activity drives Firebase profile graphs and challenges. Demo mode uses clearly labeled sample profiles and session-only activity, with no Firebase requests.
 
 For detailed behavior, see the typed domain modules in `src/lib`, the exercise definitions in `src/data/exercises.ts`, and the domain/security test suites in `tests`.
+
+With Firebase configuration absent, every app route opens Demo mode automatically. Continue in demo mode is also available from the real-account login/error screen. Use Reset demo to restore samples or Firebase login to switch to real account setup.

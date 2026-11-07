@@ -32,7 +32,7 @@ import { PageHeading } from "./landing";
 import { ExerciseDemo } from "./exercise-demo";
 const libraryIds = new Set(exerciseLibrary.map((ex) => ex.id));
 export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
-  const { user, progress: cloudProgress } = useAuth();
+  const { user, progress: cloudProgress, isDemo } = useAuth();
   const progress = restoreProgress(
     JSON.stringify(cloudProgress.plans[plan.id as Goal] ?? emptyProgress()),
     plan,
@@ -124,7 +124,7 @@ export function WorkoutPlanView({ plan }: { plan: WorkoutPlan }) {
       )}
       <p className="mb-4 text-xs text-[#a5b09b]" role="status">
         {ready
-          ? `${progress.completedDays.length} of 3 days complete. Progress synced to your account.`
+          ? `${progress.completedDays.length} of 3 days complete. ${isDemo ? "Demo progress saved in this tab." : "Progress synced to your account."}`
           : "Loading or saving progress..."}
       </p>
       <nav

@@ -14,3 +14,6 @@ next-env.d.ts
 /.firebase/
 /firebase-debug-test.log
 /firebase-audit-debug.log
+
+/test-results/
+/playwright-report/

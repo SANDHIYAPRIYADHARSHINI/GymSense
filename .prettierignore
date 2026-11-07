@@ -8,3 +8,6 @@ public/mediapipe/wasm
 /firestore.rules
 /*-debug.log
 /firebase-debug-test.log
+
+/test-results/
+/playwright-report/

@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "./auth-provider";
+import { useAuth, DemoBanner } from "./auth-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -114,7 +114,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
-        <main>{children}</main>
+        <main>
+          <DemoBanner />
+          {children}
+        </main>
         <footer className="page-footer">
           <span>Make movement a mindset.</span>
           <span>GYMSENSE &copy; 2026</span>
