@@ -10,7 +10,7 @@ GymSense brings workout instructions, rep counting, food preferences, runs, and 
 
 - Firebase email/password sign-up, login, password reset, logout, and protected application screens.
 - Three-day Weight Gain and Weight Loss plans, plus editable Custom routines with persistent day unlocking.
-- A typed library of 24 exercises, 24 animated demos, and camera counting for squats, push-ups, and jumping jacks.
+- A typed library of 24 exercises, 24 animated demos, and camera counting for 10 exercises, including biceps curls, hammer curls, squats, push-ups, and jumping jacks.
 - Tempo/form cues, optional local speech, per-set scores, and saved exercise logs.
 - Dietary preferences and daily intake stored privately in Firestore; sample meals honor diet/allergy filters.
 - GPS runs, estimated steps, manual treadmill sessions, optional FTMS Bluetooth telemetry, and synced run history.
@@ -199,7 +199,7 @@ Regenerate local demos, posters, and their manifest with `node scripts/generate-
 ## Known limitations
 
 - Meal recipes and workout templates remain sample content, not personalized AI outputs. General guidance only. Consult a qualified professional for medical or clinical nutrition advice.
-- Live rep counting supports three exercises; physical camera/sensor/treadmill accuracy requires device testing. Form scores approximate landmark alignment.
+- Live rep counting supports 10 exercises (squats, goblet squats, push-ups, jumping jacks, biceps curls, hammer curls, triceps dips, overhead triceps extensions, shoulder press, and lateral raises). Other exercises offer camera preview and manual logging; physical camera/sensor/treadmill accuracy requires device testing. Form scores approximate landmark alignment.
 - Secure context and compatible browser/device permissions are required for camera, GPS, motion, and Bluetooth. Mobile HTTP LAN URLs are not localhost. Use HTTPS.
 - Tracking pauses when the page is hidden; there is no background run service. FTMS reads telemetry only and never controls a belt.
 - Usernames cannot be renamed; account deletion, email-change flows, avatar uploads, email-verification enforcement, and password reauthentication flows are future work.

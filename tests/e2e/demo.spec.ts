@@ -301,3 +301,49 @@ test("extension-injected root attributes do not cause hydration warnings", async
     page.getByRole("heading", { name: "Weight Loss", exact: true }),
   ).toBeVisible();
 });
+
+test("strength counters expose exercise-specific setup without requesting the camera", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem("gymsense:mode:v1", "demo");
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      value: () => {
+        throw new Error("Camera must wait for an explicit click");
+      },
+    });
+  });
+  for (const id of [
+    "biceps-curls",
+    "hammer-curls",
+    "shoulder-press",
+    "lateral-raises",
+    "triceps-extensions",
+  ]) {
+    await page.goto(`/workout/${id}`);
+    await expect(
+      page.getByRole("heading", { name: "Camera rep counter", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Start Camera Rep Counter",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Target reps")).toHaveValue("12");
+    await page
+      .getByRole("button", { name: "Reset Count", exact: true })
+      .click();
+    await expect(page.getByLabel("Live webcam feed")).toBeHidden();
+  }
+  await page.goto("/workout/plank");
+  await expect(
+    page.getByRole("heading", {
+      name: "Camera preview & manual logging",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Start Camera Preview", exact: true }),
+  ).toBeVisible();
+});

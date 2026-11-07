@@ -154,7 +154,7 @@ export function PoseCounter({
       if (!config || !engine) {
         setStage("running");
         setMessage(
-          "Preview only for this exercise. Live counting supports squats, push-ups, and jumping jacks; use the manual logger below.",
+          "Automatic rep counting is not available for this exercise yet. Use the camera preview to check positioning and log your sets manually below.",
         );
         return;
       }
@@ -254,7 +254,7 @@ export function PoseCounter({
                 if (!measurement.valid) speech.cancel();
                 guidance = measurement.valid
                   ? measurement.message
-                  : "Tracking paused. Keep your whole body visible, improve lighting, and avoid covering your joints.";
+                  : `${measurement.message} Tracking paused; improve lighting and keep the required joints visible.`;
               } finally {
                 result.close();
               }
@@ -353,7 +353,7 @@ export function PoseCounter({
   return (
     <section className="panel camera-panel" aria-labelledby="camera-heading">
       <h2 id="camera-heading" className="mb-4">
-        Camera rep counter
+        {config ? "Camera rep counter" : "Camera preview & manual logging"}
       </h2>
       <div
         className="relative overflow-hidden rounded-xl bg-[#10170d]"
@@ -378,7 +378,7 @@ export function PoseCounter({
             <h3>Your space. Your pace.</h3>
             <p className="text-xs">
               {config
-                ? "Full-body tracking. Every complete rep."
+                ? "Local pose tracking. Complete movements count."
                 : "Camera preview with manual logging."}
             </p>
           </div>
@@ -408,7 +408,7 @@ export function PoseCounter({
               <span className="text-[10px] text-[#a5b09b]">
                 {config.metric === "knee"
                   ? "KNEE"
-                  : config.metric === "elbow"
+                  : !["jumping-jack", "shoulder-raise"].includes(config.metric)
                     ? "ELBOW"
                     : "SHOULDER"}{" "}
                 ANGLE
@@ -416,7 +416,9 @@ export function PoseCounter({
             </div>
             <div>
               <strong className="block text-2xl font-bold">
-                {snapshot.state}
+                {snapshot.state === "Ready"
+                  ? "Ready"
+                  : (config.phaseLabels?.[snapshot.state] ?? snapshot.state)}
               </strong>
               <span className="text-[10px] text-[#a5b09b]">STATE</span>
             </div>
@@ -462,7 +464,9 @@ export function PoseCounter({
             ? "Cancel startup"
             : stage === "running"
               ? "Stop Camera"
-              : "Start Camera Rep Counter"}
+              : config
+                ? "Start Camera Rep Counter"
+                : "Start Camera Preview"}
         </button>
         {config && (
           <button type="button" className="button secondary" onClick={reset}>
@@ -571,11 +575,7 @@ export function PoseCounter({
       )}
       {config && (
         <>
-          <p className="helper">
-            {config.metric === "jumping-jack"
-              ? "Face forward. Up = arms down, feet together. Down = arms overhead, feet apart. Return to Up to count."
-              : "Stand side-on with your full body visible. Start extended (Up), move Down, then return to Up to count."}
-          </p>
+          <p className="helper">{config.setup}</p>
           <button
             type="button"
             className="mt-3 min-h-11 text-xs text-[#ccf66b] disabled:opacity-40"

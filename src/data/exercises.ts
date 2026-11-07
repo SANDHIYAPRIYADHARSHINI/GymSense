@@ -71,8 +71,21 @@ export type LiveCounterConfig = {
   maxCycleMs: number;
   smoothing: number;
   targetReps: number;
+  setup: string;
+  phaseLabels?: { Up: string; Down: string };
 } & (
-  | { metric: "knee" | "elbow"; downAngle: number; upAngle: number }
+  | {
+      metric:
+        | "knee"
+        | "elbow"
+        | "curl"
+        | "overhead-extension"
+        | "shoulder-press"
+        | "shoulder-raise";
+      downAngle: number;
+      upAngle: number;
+      angleDirection?: "decreasing" | "increasing";
+    }
   | {
       metric: "jumping-jack";
       wristsRaisedMargin: number;
@@ -88,6 +101,8 @@ const counterDefaults = {
   maxCycleMs: 15000,
   smoothing: 0.45,
   targetReps: 12,
+  setup:
+    "Stand side-on with your full body visible. Start upright, lower into the squat, then return to standing.",
 };
 const liveCounters: Record<string, LiveCounterConfig> = {
   squats: { ...counterDefaults, metric: "knee", downAngle: 105, upAngle: 155 },
@@ -97,6 +112,8 @@ const liveCounters: Record<string, LiveCounterConfig> = {
     downAngle: 95,
     upAngle: 155,
     targetReps: 10,
+    setup:
+      "Stay side-on with your whole body visible in a plank. Start with straight elbows, lower, then press back up.",
   },
   "jumping-jacks": {
     ...counterDefaults,
@@ -106,6 +123,69 @@ const liveCounters: Record<string, LiveCounterConfig> = {
     ankleOpenRatio: 1.6,
     ankleClosedRatio: 1.05,
     targetReps: 20,
+    setup:
+      "Face forward. Start with arms down and feet together, open both arms and legs, then close to count a rep.",
+  },
+  "biceps-curls": {
+    ...counterDefaults,
+    metric: "curl",
+    downAngle: 65,
+    upAngle: 150,
+    phaseLabels: { Up: "Rest", Down: "Curl" },
+    setup:
+      "Stand side-on or at a slight angle. Keep your shoulder, elbow, wrist and hip visible. Start with arms down, curl toward your shoulders, then lower fully. Both arms together count as one rep; alternating curls track the visible arm only.",
+  },
+  "hammer-curls": {
+    ...counterDefaults,
+    metric: "curl",
+    downAngle: 65,
+    upAngle: 150,
+    phaseLabels: { Up: "Rest", Down: "Curl" },
+    setup:
+      "Stand side-on with a neutral grip. Keep your shoulder, elbow, wrist and hip visible. Start with arms down, curl up, then lower fully. Both arms together count as one rep; alternating curls track the visible arm only.",
+  },
+  "goblet-squats": {
+    ...counterDefaults,
+    metric: "knee",
+    downAngle: 105,
+    upAngle: 155,
+  },
+  "triceps-dips": {
+    ...counterDefaults,
+    metric: "elbow",
+    downAngle: 100,
+    upAngle: 155,
+    setup:
+      "Place the camera side-on with your shoulder, elbow, wrist, hip and ankle visible. Start with straight arms on a stable bench, lower to a comfortable bend, then straighten your elbows.",
+  },
+  "triceps-extensions": {
+    ...counterDefaults,
+    metric: "overhead-extension",
+    downAngle: 80,
+    upAngle: 150,
+    phaseLabels: { Up: "Straight", Down: "Bent" },
+    setup:
+      "Stand side-on with hips and raised arms in frame. Start with elbows straight overhead, bend behind your head while keeping upper arms raised, then extend overhead again.",
+  },
+  "shoulder-press": {
+    ...counterDefaults,
+    metric: "shoulder-press",
+    upAngle: 105,
+    downAngle: 155,
+    angleDirection: "increasing",
+    phaseLabels: { Up: "Rest", Down: "Lifted" },
+    setup:
+      "Face the camera at a slight angle with hips and overhead reach visible. Start with bent elbows and hands near shoulders, press overhead, then lower back to shoulder height.",
+  },
+  "lateral-raises": {
+    ...counterDefaults,
+    metric: "shoulder-raise",
+    upAngle: 25,
+    downAngle: 75,
+    angleDirection: "increasing",
+    phaseLabels: { Up: "Rest", Down: "Raised" },
+    setup:
+      "Face the camera with shoulder, elbow, wrist and hip visible. Start with arms down, raise them sideways to shoulder height with softly bent elbows, then lower. Keep your torso still.",
   },
 };
 export type Exercise = {
