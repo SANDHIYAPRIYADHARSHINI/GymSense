@@ -1,4 +1,5 @@
-﻿import { test, expect, type Page } from "@playwright/test";
+import { exercises } from "../../src/data/exercises";
+import { test, expect, type Page } from "@playwright/test";
 const errors = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ page }) => {
   const messages: string[] = [];
@@ -170,4 +171,88 @@ test("Home and dashboard agree on plan labels and render clean punctuation", asy
       page.getByRole("heading", { name, exact: true }),
     ).toBeVisible();
   }
+});
+
+test("every exercise renders its own looping demo and YouTube destination", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  for (const exercise of exercises) {
+    await page.goto("/workout/" + exercise.id);
+    await expect(
+      page.getByRole("heading", { name: exercise.name, exact: true }),
+    ).toBeVisible();
+    const image = page.getByRole("img", {
+      name: exercise.name + ": looping stickman demonstration",
+      exact: true,
+    });
+    await expect(image).toBeVisible();
+    await expect
+      .poll(() =>
+        image.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+    await expect
+      .poll(
+        async () =>
+          new URL((await image.getAttribute("src"))!, page.url()).pathname,
+      )
+      .toBe(exercise.animationPath);
+    await expect(
+      page.getByRole("link", { name: "YouTube", exact: true }),
+    ).toHaveAttribute("href", exercise.youtubeVideo.url);
+    await expect(
+      page.getByText("Demo coming soon", { exact: true }),
+    ).toHaveCount(0);
+  }
+});
+test("demos pause, open fullscreen, and launch the chosen YouTube video", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/workout/burpees");
+  await page.getByRole("button", { name: "Watch demo", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Pause animation", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("img", {
+      name: "Burpees: paused stickman pose",
+      exact: true,
+    }),
+  ).toHaveAttribute("src", "/animations/burpees.poster.svg");
+  await dialog
+    .getByRole("button", { name: "Play animation", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("img", {
+      name: "Burpees: looping stickman demonstration",
+      exact: true,
+    }),
+  ).toHaveAttribute("src", "/animations/burpees.svg");
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  // Keep the test offline; verify the actual new-tab URL without loading third-party advertising.
+  await context.route("https://www.youtube.com/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>External exercise tutorial</h1>",
+    }),
+  );
+  const opened = page.waitForEvent("popup");
+  await page.getByRole("link", { name: "YouTube", exact: true }).click();
+  const popup = await opened;
+  await popup.waitForLoadState();
+  await expect(popup).toHaveURL(
+    exercises.find((e) => e.id === "burpees")!.youtubeVideo.url,
+  );
+  await popup.close();
+  await page.goto("/plan/weight-gain");
+  await expect(
+    page.getByRole("link", { name: "YouTube", exact: true }),
+  ).toHaveCount(3);
 });

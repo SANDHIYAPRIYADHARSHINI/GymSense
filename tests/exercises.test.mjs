@@ -146,3 +146,23 @@ test("muscle, equipment, difficulty filters intersect with search and can yield 
     }).length > 1,
   );
 });
+
+test("every exercise has a direct matching YouTube video with attribution", () => {
+  const ids = new Set();
+  for (const exercise of exercises) {
+    const video = exercise.youtubeVideo;
+    const url = new URL(video.url);
+    assert.equal(url.origin, "https://www.youtube.com");
+    assert.equal(url.pathname, "/watch");
+    assert.match(url.searchParams.get("v"), /^[A-Za-z0-9_-]{11}$/);
+    assert.ok(
+      !ids.has(url.searchParams.get("v")),
+      exercise.id + " must use its own demonstration",
+    );
+    ids.add(url.searchParams.get("v"));
+    assert.ok(video.title.length > 5);
+    assert.ok(video.channel.length > 0);
+    assert.match(video.verifiedOn, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(!exercise.animationPath.includes("placeholder"), exercise.id);
+  }
+});
