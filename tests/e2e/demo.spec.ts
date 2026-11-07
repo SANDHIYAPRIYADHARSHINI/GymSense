@@ -138,9 +138,9 @@ test("Firebase login and demo re-entry work without configuration", async ({
   await page
     .getByRole("button", { name: "Continue in demo mode", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole("heading", { name: /Welcome back, Alex/ }),
+    page.getByRole("heading", { name: "What are you working toward?" }),
   ).toBeVisible();
 });
 
