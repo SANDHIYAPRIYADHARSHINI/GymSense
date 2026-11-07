@@ -95,11 +95,19 @@ test("sample friend requests and profile previews are interactive", async ({
     page.getByRole("button", { name: "View profile", exact: true }),
   ).toHaveCount(2);
 });
-test("a manual treadmill run appears in profile history", async ({ page }) => {
+test("an outdoor GPS run appears in profile history", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 13.08, longitude: 80.27 });
   await page.goto("/run");
-  await page
-    .getByRole("button", { name: "Manual treadmill", exact: true })
-    .click();
+  await expect(
+    page.getByRole("group", { name: "Run tracking mode" }).getByRole("button"),
+  ).toHaveCount(2);
+  await expect(
+    page.getByRole("button", { name: "Manual treadmill", exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "Start run", exact: true }).click();
   await expect(page.getByText("00:01", { exact: true })).toBeVisible();
   await page
@@ -110,11 +118,11 @@ test("a manual treadmill run appears in profile history", async ({ page }) => {
   ).toBeVisible();
   await page.goto("/profile");
   await expect(
-    page.getByRole("heading", { name: "Manual treadmill", exact: true }),
+    page.getByRole("heading", { name: "Outdoor GPS", exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Manual treadmill", exact: true }),
+    page.getByRole("heading", { name: "Outdoor GPS", exact: true }),
   ).toBeVisible();
 });
 test("Firebase login and demo re-entry work without configuration", async ({

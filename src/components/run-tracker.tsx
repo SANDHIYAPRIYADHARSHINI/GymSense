@@ -29,7 +29,6 @@ import { PageHeading } from "./landing";
 import { RunHistory } from "./run-history";
 const modes = [
   { id: "outdoor", label: "Outdoor GPS" },
-  { id: "manual", label: "Manual treadmill" },
   { id: "ftms", label: "Bluetooth treadmill" },
 ] as const;
 export function RunTracker() {
@@ -48,9 +47,6 @@ export function RunTracker() {
   const [gpsStatus, setGpsStatus] = useState(
     "GPS permission is requested when you start an outdoor run.",
   );
-  const [speed, setSpeed] = useState(8);
-  const [incline, setIncline] = useState(0);
-  const [distanceDraft, setDistanceDraft] = useState("");
   const [stepsDraft, setStepsDraft] = useState("");
   const [stride, setStride] = useState(0.75);
   const [motionEnabled, setMotionEnabled] = useState(false);
@@ -109,7 +105,7 @@ export function RunTracker() {
         engine.pause(performance.now());
         setView(engine.snapshot(performance.now()));
         setGpsStatus(
-          "GPS is unavailable. Use HTTPS on mobile, or choose manual treadmill tracking.",
+          "GPS is unavailable. Use HTTPS on mobile and enable location services, or connect a compatible Bluetooth treadmill.",
         );
       });
       return;
@@ -142,7 +138,7 @@ export function RunTracker() {
             ? "Location permission was denied. Allow it in your browser settings, then Resume to retry."
             : error.code === 3
               ? "GPS timed out. Move to a clearer location, then Resume."
-              : "Position is unavailable. Move to a clearer location, then Resume or choose manual tracking.",
+              : "Position is unavailable. Move to a clearer location, then Resume.",
         );
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
@@ -199,7 +195,6 @@ export function RunTracker() {
     setDeviceName("");
     setNotice("");
     setBtError("");
-    setDistanceDraft("");
     setStepsDraft("");
     if (!btSupported) setBtState("Unsupported browser/device");
   }
@@ -209,8 +204,6 @@ export function RunTracker() {
       (engine.mode === "ftms" && btState !== "Connected")
     )
       return;
-    engine.setManualSpeed(speed, performance.now());
-    engine.setManualIncline(incline);
     if (engine.mode === "outdoor")
       setGpsStatus("Waiting for a fresh GPS fix...");
     startedAt.current = new Date().toISOString();
@@ -330,13 +323,6 @@ export function RunTracker() {
           : "Motion sensors are unsupported here. You can enter steps manually or use a distance estimate.",
       );
   }
-  function applyDistance(event: React.FormEvent) {
-    event.preventDefault();
-    if (distanceDraft === "") return;
-    engine.setDistance(Number(distanceDraft) * 1000, performance.now());
-    setDistanceDraft("");
-    refresh();
-  }
   function applySteps(event: React.FormEvent) {
     event.preventDefault();
     if (stepsDraft === "") return;
@@ -349,7 +335,7 @@ export function RunTracker() {
       <PageHeading
         eyebrow="FIND YOUR STRIDE"
         title="One step. Then the next."
-        description="Track an outdoor run, log your treadmill pace, or connect a compatible FTMS treadmill."
+        description="Track an outdoor run with GPS or connect a compatible FTMS Bluetooth treadmill."
       />
       <div
         className="mb-6 flex flex-wrap gap-2"
@@ -445,7 +431,8 @@ export function RunTracker() {
           {!btSupported && (
             <p className="mt-3 text-xs">
               Web Bluetooth is unavailable in this browser or context. Choose
-              Outdoor GPS or Manual treadmill above.
+              Outdoor GPS above, or use a browser and device that support Web
+              Bluetooth.
             </p>
           )}
           <dl className="mt-5 grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
@@ -584,85 +571,6 @@ export function RunTracker() {
               : "Stop saves a completed run to your account. Keep this page open and visible while tracking.")}
         </p>
       </section>
-      {view.mode === "manual" && (
-        <section className="mt-6 rounded-2xl border border-[#35472a] bg-[#192315] p-5">
-          <h2>Manual treadmill entry</h2>
-          <p className="mt-2 text-xs">
-            Distance accumulates from the speed you enter. Update speed when the
-            treadmill setting changes, or correct the session distance below.
-          </p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label htmlFor="manual-speed" className="text-xs">
-              Speed (km/h)
-              <input
-                id="manual-speed"
-                type="number"
-                min="0"
-                max="30"
-                step="0.1"
-                className="plan-input"
-                value={speed}
-                disabled={view.status === "stopped"}
-                onChange={(event) => {
-                  const value = Math.max(
-                    0,
-                    Math.min(30, Number(event.target.value)),
-                  );
-                  setSpeed(value);
-                  engine.setManualSpeed(value, performance.now());
-                  refresh();
-                }}
-              />
-            </label>
-            <label htmlFor="manual-incline" className="text-xs">
-              Incline (%)
-              <input
-                id="manual-incline"
-                type="number"
-                min="-10"
-                max="30"
-                step="0.1"
-                className="plan-input"
-                value={incline}
-                disabled={view.status === "stopped"}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  setIncline(value);
-                  engine.setManualIncline(value);
-                  refresh();
-                }}
-              />
-            </label>
-          </div>
-          <form
-            className="mt-5 flex flex-wrap items-end gap-3"
-            onSubmit={applyDistance}
-          >
-            <label htmlFor="manual-distance" className="grow text-xs">
-              Session distance correction (km)
-              <input
-                id="manual-distance"
-                type="number"
-                min="0"
-                max="1000"
-                step="0.01"
-                className="plan-input"
-                value={distanceDraft}
-                disabled={!active}
-                onChange={(event) => setDistanceDraft(event.target.value)}
-                required
-              />
-            </label>
-            <button
-              className="button secondary disabled:opacity-40"
-              type="submit"
-              disabled={!active || distanceDraft === ""}
-            >
-              Apply distance
-            </button>
-          </form>
-        </section>
-      )}
       <section className="mt-6 rounded-2xl border border-[#35472a] bg-[#192315] p-5">
         <h2>Steps, your way</h2>
         <p className="mt-2 text-xs" role="status">
