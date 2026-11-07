@@ -13,8 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
+    // Extensions may add root attributes before hydration. This only suppresses
+    // differences on html/body themselves; app descendants retain hydration checks.
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <AuthProvider>
           <Shell>{children}</Shell>
         </AuthProvider>

@@ -256,3 +256,48 @@ test("demos pause, open fullscreen, and launch the chosen YouTube video", async 
     page.getByRole("link", { name: "YouTube", exact: true }),
   ).toHaveCount(3);
 });
+
+test("extension-injected root attributes do not cause hydration warnings", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.grantPermissions(["local-network-access"], { origin: baseURL });
+  await page.addInitScript(() =>
+    sessionStorage.setItem("gymsense:mode:v1", "demo"),
+  );
+  await page.route("**/dashboard", async (route) => {
+    const response = await route.fetch();
+    const html = (await response.text())
+      .replace(
+        /<html([^>]*)>/,
+        '<html$1 data-be-installed="true" data-liner-extension-version="7.18.55">',
+      )
+      .replace(
+        /<body([^>]*)>/,
+        '<body$1 data-new-gr-c-s-check-loaded="14.1164.0" data-gr-ext-installed="">',
+      );
+    await route.fulfill({ response, body: html });
+  });
+  await page.goto("/dashboard");
+  await expect(
+    page.getByRole("heading", { name: /Welcome back, Alex/ }),
+  ).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-liner-extension-version",
+    "7.18.55",
+  );
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-gr-ext-installed",
+    "",
+  );
+  await page
+    .getByRole("link")
+    .filter({
+      has: page.getByRole("heading", { name: "Weight Loss", exact: true }),
+    })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Weight Loss", exact: true }),
+  ).toBeVisible();
+});
