@@ -1,77 +1,115 @@
-# GymSense
+﻿# GymSense
 
-A mobile-first fitness companion with on-device AI rep counting, guided workouts, nutrition planning, and run tracking.
+A mobile-first fitness companion with on-device AI rep counting, guided workouts, nutrition planning, and Firebase account sync.
 
 ## Problem statement
 
-Starting a fitness routine often means juggling workout instructions, rep tracking, meal ideas, and motivation across several apps. GymSense brings these into one approachable demo, with camera feedback that runs locally rather than uploading workout video.
+GymSense brings workout instructions, rep counting, food preferences, runs, and fitness motivation together. Camera inference stays on your device, while account data and completed activity sync across browsers.
 
 ## Key features
 
+- Firebase email/password sign-up, login, password reset, logout, and protected application screens.
 - Three-day Weight Gain and Weight Loss plans, plus editable Custom routines with persistent day unlocking.
-- A searchable, typed library of 24 exercises with instructions, common mistakes, and six lightweight animated demonstrations.
-- MediaPipe camera rep counting for squats, push-ups, and jumping jacks, with tempo checks, form cues, optional local speech, and per-set scores.
-- Mock daily meals filtered by dietary preferences and allergies, with nutrition totals and manual protein, fiber, and water trackers.
-- Outdoor GPS runs, estimated motion-based steps, manual treadmill sessions, and optional consent-based FTMS Bluetooth telemetry.
-- Mock friends, weekly challenges, and 12-week contribution graphs; locally saved run history.
-- Responsive dark interface, desktop sidebar, and mobile bottom navigation.
+- A typed library of 24 exercises, six animated demos, and camera counting for squats, push-ups, and jumping jacks.
+- Tempo/form cues, optional local speech, per-set scores, and saved exercise logs.
+- Dietary preferences and daily intake stored privately in Firestore; sample meals honor diet/allergy filters.
+- GPS runs, estimated steps, manual treadmill sessions, optional FTMS Bluetooth telemetry, and synced run history.
+- Real user profiles, username search, consent-based friend requests, weekly challenges, and activity/streak graphs.
 
-This is a hackathon prototype. Login is UI-only; there is no account service, database, payment integration, or remote AI API.
+## Tech stack and architecture
 
-## Tech stack
+Next.js App Router, React, TypeScript, Tailwind CSS 4, Lucide, Firebase Web SDK (Authentication and Cloud Firestore), and MediaPipe Tasks Vision. npm workspaces share domain types. ESLint, Prettier, Node tests, and Firebase emulator tests provide checks.
 
-Next.js App Router, React, TypeScript, Tailwind CSS 4, Lucide icons, MediaPipe Tasks Vision, browser localStorage, Geolocation, Device Motion, and Web Bluetooth. npm workspaces share a small domain-types package. ESLint, Prettier, and Node's built-in test runner provide checks.
-
-## Architecture overview
-
-The **repository root is both the application and deployment root**. Run all commands here, not in `src` or `packages/core`.
+The repository root is the application and deployment root. No Admin SDK or server credentials are required. Static exercise/plan templates and meal recipes remain bundled sample content; personal records come from Firestore.
 
 ```text
-src/app/                 Pages and the GET /api/health route
-src/components/          Interactive UI and shared responsive shell
-src/data/                Typed mock exercises, plans, foods, users, progress
-src/lib/pose/            Landmark geometry, rep cycles, coaching and speech
-src/lib/run/             GPS filtering, timer, steps and saved summaries
-src/lib/bluetooth/       FTMS connection and treadmill packet parsing
-src/lib/                 Diet, social and workout progression logic
-packages/core/           Shared domain types (npm workspace)
-public/animations/       SVG demos and reduced-motion posters
-public/mediapipe/        Committed pose model and generated WASM runtime
-scripts/                 Local asset preparation and SVG generation
-tests/                  Domain and mocked browser-API tests
+src/app/                  Routes and GET /api/health
+src/components/           UI, AuthProvider/useAuth, protected route gate
+src/data/                 Exercise catalog, plan templates, meal fixtures
+src/lib/firebase.ts       Lazy browser Firebase initialization and errors
+src/lib/firestore/        Typed users, plans/progress, logs, diet, runs, friends, streaks
+src/lib/pose/             On-device landmark detection, reps and coaching
+src/lib/run/              GPS, timer and step algorithms
+src/lib/bluetooth/        FTMS read-only telemetry
+packages/core/            Shared domain types
+public/animations/        SVG demonstrations and static posters
+public/mediapipe/          Pose model and generated WASM runtime
+firestore.rules           Default-deny access rules with field validation
+firebase.json             Rule/index deployment and local emulator configuration
+tests/firebase/           Actual SDK integration and cross-user rules tests
 ```
 
-Next.js renders routes; client components request device permissions only after user actions. Camera inference runs in the browser with locally served assets. Plans, diet preferences, friend memberships, and run summaries use browser storage. Profile streaks and challenge progress derive from deterministic mock users, independently of locally recorded workouts. The health route is a stateless liveness check, not a database or hardware check.
+Auth state is observed before protected children render. Unauthenticated visits redirect to `/login`; signed-in users with a complete profile leave `/login` for `/dashboard`. An interrupted sign-up resumes profile setup after the next login. Client route gating is for navigation; Firestore rules enforce data authorization even when someone bypasses the UI. `/api/health` is a public, stateless liveness endpoint returning `{ "status": "ok" }`.
 
 ## Local setup
 
-Prerequisites: **Node.js 24.x**, npm 10 or later, Git, and internet access for the initial dependency install. `.nvmrc` and `package.json` declare Node 24. If using nvm, run `nvm install 24` and `nvm use 24`.
+Use **Node.js 24.x**, npm 10+, Git, and a Firebase project. From the repository root:
 
 ```sh
-git clone --branch feat/gymsense-hackathon-submission https://github.com/SANDHIYAPRIYADHARSHINI/GymSense.git
-cd GymSense
 npm install
+```
+
+1. In the [Firebase console](https://console.firebase.google.com/), register a Web app in your project.
+2. Enable **Authentication → Sign-in method → Email/Password**. Configure your password policy and reset-email template. Add `localhost` and your deployed hostname under Authentication's authorized domains as needed.
+3. Create a **Cloud Firestore Standard database in Native mode**, using the default database. Start with production rules; replace them with this repository's rules before using the app.
+4. Copy `.env.example` to `.env.local` and fill the six values from the Web app's Firebase configuration. Do not commit `.env.local`.
+5. Deploy the checked-in rules and indexes to your own project:
+
+```sh
+npx firebase login
+npx firebase deploy --only firestore:rules,firestore:indexes --project YOUR_PROJECT_ID
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). No environment setup, registration, or credentials are needed. On Windows PowerShell, if execution policy blocks `npm.ps1`, use `npm.cmd` instead of `npm`.
+Open [localhost:3000](http://localhost:3000), visit `/login`, and create an account. Sign-up requires a unique 3–24 character username (letters, numbers, underscores), a display name, email, password, and goal. Usernames normalize to lowercase and are immutable in this version. Your name, username, and goal are searchable by signed-in members. Your email is private.
 
-Stop the development server with Ctrl+C, then build and serve production:
+On Windows, use `Copy-Item .env.example .env.local`. On macOS/Linux use `cp .env.example .env.local`. If PowerShell blocks `npm.ps1`, use `npm.cmd` and `npx.cmd`.
 
-```sh
-npm run build
-npm start
+No real Firebase configuration is shipped. Without it, public pages and builds still work, while account routes show a clear configuration message. Restart the development server after changing environment variables.
+
+`npm install` copies the pinned MediaPipe WASM runtime into `public/mediapipe/wasm`; the pose model is committed. If install lifecycle scripts are disabled, run `npm run prepare:pose` before starting/building. `npm ci` uses the lockfile for reproducible installs.
+
+## Environment variables
+
+Set all of these in ignored `.env.local` for local use and in your deployment platform for hosted use:
+
+```dotenv
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
 ```
 
-Open `/api/health` to verify a JSON response:
+These are Web app identifiers bundled into the client, not administrative credentials. Do not put service-account JSON, private keys, or other secrets in any `NEXT_PUBLIC_` variable. Access control comes from Authentication and deployed Firestore rules, not hiding the Web configuration. See [Firebase Web setup](https://firebase.google.com/docs/web/setup) and [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables).
 
-```json
-{ "status": "ok" }
-```
+## Firestore data model and security
 
-`npm install` automatically copies MediaPipe WASM from the pinned npm dependency to `public/mediapipe/wasm`. The pose model is already committed; no model download or API key is needed at runtime. If your package manager disables lifecycle scripts, run `npm run prepare:pose` before starting or building. Keep the lockfile; `npm ci` is also available for reproducible installs.
+- `users/{uid}`: private profile, email, goal, fitness level, timestamps. Only the owner can read/update it.
+- `usernames/{username}`: immutable `{ uid }` reservation. Created atomically with the profile, so concurrent users cannot claim the same name.
+- `publicProfiles/{uid}`: only UID, username, display name, photo URL (currently null), and goal. Authenticated searches are limited to 20 results. Email and activity are excluded.
+- `workoutProgress/{uid}`: current goal, completed day IDs, exercise completion summary, per-goal progress/custom routines, dated activity, streaks, totals, timestamp.
+- `workoutPlans/{uid}/plans/{goal}`: saved three-day routine snapshot, including Custom prescriptions.
+- `exerciseLogs/{id}`: owner, exercise, goal/day context, sets, reps, duration, nullable form score, server completion timestamp. Immutable except owner deletion.
+- `dietPreferences/{uid}` and `users/{uid}/intake/{date}`: private dietary preferences and daily nutrition/water trackers.
+- `runs/{id}`: owner, type, distance in km, active seconds, seconds/km pace, steps, source, start/end timestamps. No GPS coordinates.
+- `friendRequests/{senderUid}_{recipientUid}`: participants, pending/accepted/rejected status, timestamps. Only the recipient can accept or decline. Accepted requests are the canonical friendship records; either party can remove them.
+- `friendActivity/{uid}`: aggregate dated activity, readable only by its owner and accepted friends. Removal immediately revokes server access; previously viewed data cannot be recalled from someone's memory or screenshots.
 
-### Quality checks
+Firestore cannot hide selected fields inside a readable document, so public profiles are separate from private records. All unlisted paths/operations are denied. Queries for runs, logs, and requests constrain owner/participants because rules are not filters. See [Firebase field-access guidance](https://firebase.google.com/docs/firestore/security/rules-fields).
+
+Workout mutations use transactions against the latest state. Repeated day completion does not add extra workouts. Exercise logs and runs use stable IDs so a retry does not double-count activity. Dates for streaks/challenges use UTC; daily intake uses the browser's local calendar date. Reps come from logged sets; active minutes come from logged durations and runs, not estimated workout prescriptions. Scores and progress are self-reported client data, not tamper-proof competition results.
+
+## Migration and offline behavior
+
+Application screens no longer read or write localStorage for personal records. Old demo records are **not automatically uploaded or assigned to the next person who signs in**. New accounts start empty. Existing anonymous demo data remains unused on the device; clear the site's browser storage yourself if you want it removed. The mock user fixture file remains only for legacy algorithm tests, not live profile/friend screens.
+
+Firebase manages its own login persistence. Firestore uses memory caching only; this app does not enable persistent disk caching for private data. Logging out unmounts account screens and subscriptions. Navigation/camera state stays in memory.
+
+An offline banner explains connectivity loss. Previously loaded data may remain visible. Saves require a connection and display pending/error states until acknowledged. Failed run saves retain their summary on the open page for retry; unsaved state is lost on reload. No anonymous or local mock fallback silently replaces failed cloud data.
+
+## Checks and production run
 
 ```sh
 npm run typecheck
@@ -79,76 +117,66 @@ npm run lint
 npm test
 npm run format:check
 npm run build
+npm start
 ```
 
-`npm run format` applies formatting. Tests use synthetic landmarks, mock sensor data, and pure domain functions; they do not replace live device testing. Node may print a module-type detection warning when loading TypeScript test dependencies.
+Stop the dev server before using `npm start`. The production server defaults to port 3000. The health endpoint does not check Firebase credentials, rules, or network availability.
 
-## Environment variables
+### Firebase emulator tests
 
-**None are required.** `.env.example` documents this and deliberately contains no values or secrets. You do not need to copy it to `.env.local`.
+Install **Java 21+**, make `java` available on PATH, then run:
 
-Future private configuration belongs in ignored `.env.local` files or deployment environment settings. Never commit keys or private data. `NEXT_PUBLIC_` variables are bundled into browser code and must not contain secrets. See the [Next.js environment-variable guide](https://nextjs.org/docs/app/guides/environment-variables).
+```sh
+npm run test:firebase
+```
 
-## Vercel deployment instructions
+The script starts local Auth/Firestore emulators using `demo-gymsense`, downloads the emulator runtime on first use, runs the tests, and shuts down. No Firebase login or real project credentials are required. Ports 8080 and 9099 must be free. Tests use fake example.test accounts and enforce the checked-in rules. They cover actual SDK signup/login/logout/reset, atomic username claims, concurrent workout updates, second-app persistence, idempotent logs/runs, diet preferences, friends, and denied cross-user operations. Permission-denied messages for negative rule tests are expected.
 
-No deployment has been created automatically. To deploy this branch:
+## Vercel deployment
 
-1. In Vercel, add a new project and import this GitHub repository (or your fork).
-2. Deploy `feat/gymsense-hackathon-submission`. If the initial import uses the default branch, select this branch for a deployment or merge the submission branch before deploying the default branch.
-3. Set **Framework Preset: Next.js** and **Root Directory: `./`** (the repository root).
-4. Set **Node.js: 24.x**, **Install Command: `npm install`**, and **Build Command: `npm run build`**. Leave Output Directory at the Next.js default; do not set it to `out` or enable static export.
-5. Leave environment variables empty. Keep install lifecycle scripts enabled so MediaPipe WASM is copied.
-6. Deploy, then visit the HTTPS URL and `/api/health`. Check `/dashboard`, `/plan/weight-loss`, `/workout/squats`, and `/profile`. Allow camera access when prompted. Check that the model and WASM assets load successfully.
-7. Ensure judges can access the deployment: review Vercel deployment protection settings or provide an authorized share link.
+1. Import this repository/feature branch into Vercel.
+2. Use **Next.js** preset, **Root Directory `./`**, **Node.js 24.x**, install command `npm install`, and build command `npm run build`.
+3. Leave the output directory at the Next.js default. Do not use static export.
+4. Set the six Firebase Web variables for the desired Preview/Production environments **before building**. Redeploy after changing them.
+5. Deploy Firestore rules/indexes to that same Firebase project using the command above. Add the Vercel hostname to Firebase Auth authorized domains.
+6. Check `/api/health`, then sign up, save a day, sign out, and sign in from another browser. Confirm no other user's private profile is accessible.
+7. Review deployment protection so judges can access the app; provide a share link if necessary.
 
-These settings follow [Vercel's Next.js integration](https://vercel.com/docs/frameworks/full-stack/nextjs) and [build configuration documentation](https://vercel.com/docs/builds/configure-a-build). No `vercel.json` is needed. HTTPS supports device permission APIs, but browser and device compatibility still apply. Preview and production domains each have separate localStorage.
+See [Vercel Next.js support](https://vercel.com/docs/frameworks/full-stack/nextjs). No Vercel project or live Firebase rules are deployed by this code change. Production setup requires your project configuration and console access.
 
 ## Demo walkthrough
 
 ### 30-second demo path
 
-Before presenting, use desktop Chrome on localhost or HTTPS, position a camera side-on with your whole body visible, and allow extra time for first model initialization and permission prompts. The 30-second path is a short feature tour, not an entire workout.
+Prepare a signed-in account and desktop Chrome on localhost or HTTPS. Position the camera side-on with your full body visible; allow extra time for the first permission prompt and model load.
 
-1. **Choose a goal:** open `/dashboard` and select **Weight Loss → Start Plan**.
-2. **Open Day 1:** view **Full-body circuit** on `/plan/weight-loss`; Day 1 is selected by default.
-3. **Start an exercise:** open **Bodyweight squats** (`/workout/squats`) and inspect the looping demo.
-4. **Enable camera rep counting:** click **Start Camera Rep Counter**, allow the camera, and stand upright to establish the starting position.
-5. **Complete reps:** perform two controlled squat cycles, lowering and returning upright; then select **Finish Set & Show Score**. The target is a guide, not a gate for finishing a demonstration set. Partial or rushed movement is rejected.
-6. **View streak graph:** choose **Profile** in navigation to inspect the 12-week graph and a day's activity. Explain that it is sample activity, not automatically updated by the reps just performed.
+1. Choose **Weight Loss** on `/dashboard`.
+2. Open **Day 1 — Full-body circuit**.
+3. Open **Bodyweight squats** and inspect the looping demo.
+4. Click **Start Camera Rep Counter**, allow access, and stand upright.
+5. Perform two controlled squat cycles; choose **Finish Set & Show Score**, copy the count into the logger, and select **Log set** to save it.
+6. Open **Profile** to inspect your real activity graph. To unlock Day 2, return to the plan, check every exercise, and choose **Mark Day Complete**.
 
-If camera access is unavailable, use the animation and manual set logger; this fallback does not demonstrate live counting. On the plan page, check every exercise and select **Mark Day Complete** to unlock Day 2. Camera counts do not automatically check plan exercises.
+Camera reps do not automatically check plan exercises. Log a set explicitly to save it. If a camera is unavailable, use the animation/manual logger. Verify cross-browser sync by signing in to the same account in a second browser.
 
-### Explore the rest
-
-- `/exercises`: search and combine muscle, equipment, and difficulty filters.
-- `/plan/custom`: add exercises from the catalog to an empty routine.
-- `/diet`: change diet/allergy preferences, generate matching meals, and log intake.
-- `/run`: try Manual treadmill without hardware, start and stop a short session, then see it in `/profile` under Completed run history. Outdoor GPS and Bluetooth are optional.
-- `/friends`: search a username, add a friend, inspect their own graph, and join a sample weekly challenge.
-- `/login`: inspect the sign-in UI; no credentials are submitted or stored.
-
-For a fresh demo, clear this site's browser storage. That removes local plans, preferences, friends, and saved runs on that origin. Detailed implementation notes are in [docs/FEATURES.md](docs/FEATURES.md).
+Explore `/exercises` for filters, `/plan/custom` for editable routines, `/diet` for meal preferences, `/run` for a hardware-free manual treadmill session, and `/friends` for a request exchange between two test accounts.
 
 ## Known limitations
 
-- Workout and nutrition recommendations are mock content, not personalized AI outputs. Only pose estimation uses an ML model. General guidance only. Consult a qualified professional for medical or clinical nutrition advice.
-- Local data is not backed up or synced. Clearing browser storage removes it. Manual exercise sets and camera set scores last for the current page visit.
-- Social activity ends at the fixed sample date **5 November 2026**. Real workout/run completion does not update mock streaks or challenge totals.
-- Live counters support only squats, push-ups, and jumping jacks. Camera placement, lighting, visibility, and movement range affect accuracy; form scores approximate landmark alignment. Other exercises use demos/manual logging.
-- Camera, GPS, motion, and Bluetooth require compatible browsers and a secure context (HTTPS or localhost). A phone opening a computer's plain HTTP LAN address does not get the localhost exception. Test mobile devices over HTTPS.
-- Tracking pauses when the page is hidden. There is no background GPS, route map, native health integration, or persistent step service. Motion steps are estimates; manual corrections and distance-based estimates are available.
-- Web Bluetooth is not universally available. Only FTMS-advertising treadmills are offered; devices expose different fields. GymSense reads telemetry and never controls the treadmill belt. Use manual mode when unsupported.
-- Automated checks do not establish physical webcam accuracy, mobile sensor behavior, real treadmill compatibility, or all browser interactions. A live hardware demo and deployed smoke test remain necessary.
-- `npm audit` may report development-tool advisories; review the current report before a production release. Do not apply breaking dependency upgrades without validation.
+- Meal recipes and workout templates remain sample content, not personalized AI outputs. General guidance only. Consult a qualified professional for medical or clinical nutrition advice.
+- Live rep counting supports three exercises; physical camera/sensor/treadmill accuracy requires device testing. Form scores approximate landmark alignment.
+- Secure context and compatible browser/device permissions are required for camera, GPS, motion, and Bluetooth. Mobile HTTP LAN URLs are not localhost. Use HTTPS.
+- Tracking pauses when the page is hidden; there is no background run service. FTMS reads telemetry only and never controls a belt.
+- Usernames cannot be renamed; account deletion, email-change flows, avatar uploads, email-verification enforcement, and password reauthentication flows are future work.
+- The client gate does not create server-side session cookies. Private data is fetched by authenticated clients under Firestore rules.
+- The prototype stores dated activity in one owner document and reads complete owner log/run collections. Larger datasets need pagination and partitioned aggregates before scaling toward Firestore document limits.
+- There is no automatic import of anonymous demo data. Live-project deployment and email deliverability need verification with your configuration.
+- A gRPC 1.x dependency override avoids known vulnerabilities in Firebase's pinned Node transport. Review `npm audit` and retest when upgrading dependencies; development tooling may still report advisories.
 
 ## Roadmap
 
-- Connect completed workouts and runs to a unified local activity/streak model.
-- Calibrate and validate more exercise detectors across devices and movement ranges.
-- Add browser end-to-end accessibility tests and a physical-device test matrix.
-- Improve optional offline support and user-controlled data export/import.
-- Evaluate opt-in accounts, secure sync, and personalized planning after the prototype, with explicit privacy controls.
+Add account-management flows, optional verified-email enforcement/App Check, pagination and server-maintained activity aggregates, more validated movement detectors, browser accessibility/end-to-end coverage, and user-controlled data export/import.
 
-## Privacy and submission notes
+## Privacy
 
-No API keys, database credentials, real user profiles, camera recordings, or GPS coordinates are committed or required. Video and pose processing stay on-device; run storage contains summaries rather than coordinates. Names and social activity are mock fixtures. `.env*` files are ignored except `.env.example`. The sole API route, `/api/health`, returns only the static status object.
+Camera video and landmarks are processed locally and are never uploaded. Saved sets, account details, dietary preferences, and run summaries go to your configured Firebase project. Raw GPS coordinates are neither stored nor uploaded. Friends see only public profile fields and aggregate activity after acceptance. No real credentials or private user data are included in this repository.

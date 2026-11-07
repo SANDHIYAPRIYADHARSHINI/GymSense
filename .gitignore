@@ -7,3 +7,10 @@ out/
 next-env.d.ts
 
 /public/mediapipe/wasm/
+
+/firebase-debug.log
+/firestore-debug.log
+/ui-debug.log
+/.firebase/
+/firebase-debug-test.log
+/firebase-audit-debug.log
