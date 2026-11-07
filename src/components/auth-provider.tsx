@@ -264,7 +264,7 @@ function AuthGate({
   useEffect(() => {
     if (loading || error) return;
     if (protectedRoute && !user) router.replace("/login");
-    if (path === "/login" && user && profile) router.replace("/dashboard");
+    if (path === "/login" && user && profile) router.replace("/");
   }, [loading, error, user, profile, path, protectedRoute, router]);
   if (!protectedRoute && path !== "/login") return children;
   if (loading)
