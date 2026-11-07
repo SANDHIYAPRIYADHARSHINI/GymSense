@@ -13,7 +13,7 @@ GymSense brings workout instructions, rep counting, food preferences, runs, and 
 - A typed library of 24 exercises, 24 animated demos, and camera counting for 10 exercises, including biceps curls, hammer curls, squats, push-ups, and jumping jacks.
 - Tempo/form cues, optional local speech, per-set scores, and saved exercise logs.
 - Dietary preferences and daily intake stored privately in Firestore; sample meals honor diet/allergy filters.
-- GPS runs, estimated steps, manual treadmill sessions, optional FTMS Bluetooth telemetry, and synced run history.
+- GPS runs, estimated steps, optional FTMS Bluetooth treadmill telemetry, and synced run history.
 - Real user profiles, username search, consent-based friend requests, weekly challenges, and activity/streak graphs; a fully local demo workspace is also available.
 
 ## Tech stack and architecture
@@ -186,7 +186,7 @@ Open the demo workspace or prepare a signed-in Firebase account, using desktop C
 
 Camera reps do not automatically check plan exercises. Log a set explicitly to save it. If a camera is unavailable, use the animation/manual logger. Verify cross-browser sync by signing in to the same account in a second browser.
 
-Explore `/exercises` for filters, `/plan/custom` for editable routines, `/diet` for meal preferences, `/run` for a hardware-free manual treadmill session, and `/friends` for a request exchange between two test accounts.
+Explore `/exercises` for filters, `/plan/custom` for editable routines, `/diet` for meal preferences, `/run` for outdoor GPS or Bluetooth treadmill tracking, and `/friends` for a request exchange between two test accounts.
 
 ## Exercise demonstrations and YouTube
 

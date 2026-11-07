@@ -71,7 +71,7 @@ export class FtmsClient {
     if (!access) {
       callbacks.state("Unsupported browser/device");
       callbacks.error(
-        "Web Bluetooth is unavailable here. Use outdoor GPS or manual treadmill entry.",
+        "Web Bluetooth is unavailable here. Use outdoor GPS or a browser and device that support Web Bluetooth.",
       );
       return;
     }
@@ -148,7 +148,7 @@ export class FtmsClient {
         cancelled
           ? "No treadmill selected. You can retry the FTMS chooser."
           : selected
-            ? "This device could not provide FTMS treadmill data. Try another device or manual entry."
+            ? "This device could not provide FTMS treadmill data. Try another compatible device or use outdoor GPS."
             : "Bluetooth connection failed. Check browser permissions and retry.",
       );
     }
