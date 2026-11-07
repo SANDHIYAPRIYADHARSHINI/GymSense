@@ -1,4 +1,10 @@
-﻿import {
+import {
+  isDemoSession,
+  demoSnapshot,
+  demoPlan,
+  mutateDemoPlan,
+} from "@/lib/demo/store";
+import {
   doc,
   getDoc,
   runTransaction,
@@ -28,10 +34,14 @@ export function writeProgress(
   });
 }
 export async function getWorkoutProgress(uid: string) {
+  if (isDemoSession(uid)) return demoSnapshot().progress;
+
   const s = await getDoc(doc(firebaseClient().db, "workoutProgress", uid));
   return s.exists() ? (s.data() as WorkoutProgress) : emptyWorkoutProgress();
 }
 export async function getWorkoutPlan(uid: string, goal: Goal) {
+  if (isDemoSession(uid)) return demoPlan(goal);
+
   const s = await getDoc(
     doc(firebaseClient().db, "workoutPlans", uid, "plans", goal),
   );
@@ -42,6 +52,8 @@ export async function mutatePlan(
   plan: WorkoutPlan,
   change: (p: PlanProgress) => PlanProgress,
 ) {
+  if (isDemoSession(uid)) return mutateDemoPlan(plan, change);
+
   requireOnline();
   const { db } = firebaseClient();
   await runTransaction(db, async (tx) => {

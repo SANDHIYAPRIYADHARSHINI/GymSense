@@ -14,7 +14,7 @@ GymSense brings workout instructions, rep counting, food preferences, runs, and 
 - Tempo/form cues, optional local speech, per-set scores, and saved exercise logs.
 - Dietary preferences and daily intake stored privately in Firestore; sample meals honor diet/allergy filters.
 - GPS runs, estimated steps, manual treadmill sessions, optional FTMS Bluetooth telemetry, and synced run history.
-- Real user profiles, username search, consent-based friend requests, weekly challenges, and activity/streak graphs.
+- Real user profiles, username search, consent-based friend requests, weekly challenges, and activity/streak graphs; a fully local demo workspace is also available.
 
 ## Tech stack and architecture
 
@@ -43,6 +43,23 @@ Auth state is observed before protected children render. Unauthenticated visits 
 
 ## Local setup
 
+### Try the demo without Firebase
+
+Use Node.js 24.x and npm 10+. From the repository root:
+
+```sh
+npm install
+npm run dev
+```
+
+Open http://localhost:3000/dashboard. With no Firebase configuration, GymSense automatically opens **Demo mode**. Every application route works, including plans, exercises, diet, runs, friends, and profile. No API keys, account, or Firebase console setup is needed for this mode.
+
+The demo uses Alex Johnson and synthetic activity, with Maya as an accepted friend and an incoming request from Jordan. Dates follow the current UTC day. Sample edits persist in sessionStorage for this tab across refreshes. **Reset demo** restores the sample workspace; **Firebase login** exits to real-account setup. With Firebase configured, the login/error screen also offers **Continue in demo mode**. A configured account failure never silently changes to demo mode.
+
+Demo records are isolated from Firebase and are never uploaded, imported into a real account, or used to authenticate against Firestore. Closing the tab ends its normal demo session (browser session restoration can restore sessionStorage). If storage is blocked, the demo remains usable in memory and shows that refresh will reset it.
+
+### Connect a real Firebase account
+
 Use **Node.js 24.x**, npm 10+, Git, and a Firebase project. From the repository root:
 
 ```sh
@@ -65,7 +82,7 @@ Open [localhost:3000](http://localhost:3000), visit `/login`, and create an acco
 
 On Windows, use `Copy-Item .env.example .env.local`. On macOS/Linux use `cp .env.example .env.local`. If PowerShell blocks `npm.ps1`, use `npm.cmd` and `npx.cmd`.
 
-No real Firebase configuration is shipped. Without it, public pages and builds still work, while account routes show a clear configuration message. Restart the development server after changing environment variables.
+No real Firebase configuration is shipped. Without it, application routes open the clearly labeled local demo automatically. Restart the development server after changing environment variables.
 
 `npm install` copies the pinned MediaPipe WASM runtime into `public/mediapipe/wasm`; the pose model is committed. If install lifecycle scripts are disabled, run `npm run prepare:pose` before starting/building. `npm ci` uses the lockfile for reproducible installs.
 
@@ -103,11 +120,11 @@ Workout mutations use transactions against the latest state. Repeated day comple
 
 ## Migration and offline behavior
 
-Application screens no longer read or write localStorage for personal records. Old demo records are **not automatically uploaded or assigned to the next person who signs in**. New accounts start empty. Existing anonymous demo data remains unused on the device; clear the site's browser storage yourself if you want it removed. The mock user fixture file remains only for legacy algorithm tests, not live profile/friend screens.
+Application screens no longer read or write localStorage for personal records. Old demo records are **not automatically uploaded or assigned to the next person who signs in**. New accounts start empty. Existing anonymous demo data remains unused on the device; clear the site's browser storage yourself if you want it removed. The mock user fixture file supplies the explicitly labeled demo mode and legacy algorithm tests; real Firebase account screens use only Firestore data.
 
 Firebase manages its own login persistence. Firestore uses memory caching only; this app does not enable persistent disk caching for private data. Logging out unmounts account screens and subscriptions. Navigation/camera state stays in memory.
 
-An offline banner explains connectivity loss. Previously loaded data may remain visible. Saves require a connection and display pending/error states until acknowledged. Failed run saves retain their summary on the open page for retry; unsaved state is lost on reload. No anonymous or local mock fallback silently replaces failed cloud data.
+An offline banner explains connectivity loss. Previously loaded data may remain visible. Saves require a connection and display pending/error states until acknowledged. Failed run saves retain their summary on the open page for retry; unsaved state is lost on reload. Configured Firebase account errors offer an explicit demo button; failed cloud data is never silently replaced with demo records.
 
 ## Checks and production run
 
@@ -115,12 +132,22 @@ An offline banner explains connectivity loss. Previously loaded data may remain 
 npm run typecheck
 npm run lint
 npm test
+npm run test:demo
 npm run format:check
 npm run build
 npm start
 ```
 
 Stop the dev server before using `npm start`. The production server defaults to port 3000. The health endpoint does not check Firebase credentials, rules, or network availability.
+
+### Demo browser tests
+
+```sh
+npx playwright install chromium
+npm run test:demo:ui
+```
+
+These launch a separate production server on port 3105 with Firebase values blank. Desktop and mobile tests cover the previously blocked routes, day completion/refresh/reset, exercise logs, diet preferences, sample friendships, run history, mode switching, and absence of Firebase requests or browser errors. To use an installed Chrome instead of downloading Chromium, set `PLAYWRIGHT_CHANNEL=chrome` (PowerShell: `$env:PLAYWRIGHT_CHANNEL="chrome"`). The five `npm run test:demo` data-layer tests run without a browser or Firebase emulator.
 
 ### Firebase emulator tests
 
@@ -148,7 +175,7 @@ See [Vercel Next.js support](https://vercel.com/docs/frameworks/full-stack/nextj
 
 ### 30-second demo path
 
-Prepare a signed-in account and desktop Chrome on localhost or HTTPS. Position the camera side-on with your full body visible; allow extra time for the first permission prompt and model load.
+Open the demo workspace or prepare a signed-in Firebase account, using desktop Chrome on localhost or HTTPS. Position the camera side-on with your full body visible; allow extra time for the first permission prompt and model load.
 
 1. Choose **Weight Loss** on `/dashboard`.
 2. Open **Day 1 — Full-body circuit**.

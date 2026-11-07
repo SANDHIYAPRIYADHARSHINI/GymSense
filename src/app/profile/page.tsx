@@ -9,7 +9,7 @@ import { updateUser } from "@/lib/firestore/users";
 import { cloudError } from "@/lib/firebase";
 import type { Goal, UserProfile } from "@/lib/firestore/types";
 export default function Page() {
-  const { profile, progress, logout } = useAuth();
+  const { profile, progress, logout, isDemo } = useAuth();
   const [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   if (!profile) return null;
@@ -48,7 +48,7 @@ export default function Page() {
               void logout().catch((e) => setMessage(cloudError(e)))
             }
           >
-            Sign out
+            {isDemo ? "Exit demo" : "Sign out"}
           </button>
         }
       />

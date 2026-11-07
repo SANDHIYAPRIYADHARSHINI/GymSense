@@ -1,4 +1,14 @@
-﻿import {
+import {
+  isDemoSession,
+  demoSnapshot,
+  watchDemo,
+  saveDemoLog,
+  removeDemoLog,
+  saveDemoRun,
+  saveDemoDiet,
+  saveDemoIntake,
+} from "@/lib/demo/store";
+import {
   doc,
   collection,
   runTransaction,
@@ -32,6 +42,9 @@ export function watchExerciseLogs(
   next: (logs: (ExerciseLog & { id: string })[]) => void,
   error: (e: Error) => void,
 ) {
+  if (isDemoSession(uid))
+    return watchDemo(() => next([...demoSnapshot().logs]));
+
   return onSnapshot(
     query(
       collection(firebaseClient().db, "exerciseLogs"),
@@ -57,6 +70,8 @@ export async function saveExerciseLog(
   id: string,
   input: Omit<ExerciseLog, "userId" | "completedAt">,
 ) {
+  if (isDemoSession(uid)) return saveDemoLog(id, input);
+
   requireOnline();
   const { db } = firebaseClient();
   await runTransaction(db, async (tx) => {
@@ -80,6 +95,8 @@ export async function saveExerciseLog(
   });
 }
 export async function removeExerciseLog(uid: string, id: string) {
+  if (isDemoSession(uid)) return removeDemoLog(id);
+
   requireOnline();
   const { db } = firebaseClient();
   await runTransaction(db, async (tx) => {
@@ -103,6 +120,8 @@ export async function removeExerciseLog(uid: string, id: string) {
   });
 }
 export async function saveRun(uid: string, run: SavedRun) {
+  if (isDemoSession(uid)) return saveDemoRun(run);
+
   requireOnline();
   const { db } = firebaseClient();
   await runTransaction(db, async (tx) => {
@@ -146,6 +165,9 @@ export function watchRuns(
   next: (runs: SavedRun[]) => void,
   error: (e: Error) => void,
 ) {
+  if (isDemoSession(uid))
+    return watchDemo(() => next([...demoSnapshot().runs]));
+
   return onSnapshot(
     query(collection(firebaseClient().db, "runs"), where("userId", "==", uid)),
     (s) =>
@@ -181,6 +203,8 @@ export function watchDiet(
   next: (p: DietPreferences) => void,
   error: (e: Error) => void,
 ) {
+  if (isDemoSession(uid)) return watchDemo(() => next(demoSnapshot().diet));
+
   return onSnapshot(
     doc(firebaseClient().db, "dietPreferences", uid),
     (s) => {
@@ -200,6 +224,8 @@ export function watchDiet(
   );
 }
 export async function saveDiet(uid: string, p: DietPreferences) {
+  if (isDemoSession(uid)) return saveDemoDiet(p);
+
   requireOnline();
   const { meals, ...rest } = p;
   await setDoc(doc(firebaseClient().db, "dietPreferences", uid), {
@@ -209,6 +235,8 @@ export async function saveDiet(uid: string, p: DietPreferences) {
   });
 }
 export async function getIntake(uid: string, date: string) {
+  if (isDemoSession(uid)) return demoSnapshot().intake[date] ?? null;
+
   const s = await getDoc(
     doc(firebaseClient().db, "users", uid, "intake", date),
   );
@@ -219,6 +247,8 @@ export async function saveIntake(
   date: string,
   value: DailyTrackers,
 ) {
+  if (isDemoSession(uid)) return saveDemoIntake(date, value);
+
   requireOnline();
   await setDoc(doc(firebaseClient().db, "users", uid, "intake", date), value);
 }

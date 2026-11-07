@@ -33,7 +33,7 @@ const modes = [
   { id: "ftms", label: "Bluetooth treadmill" },
 ] as const;
 export function RunTracker() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const saving = useRef(false);
   const engine = useMemo(() => new RunEngine(), []);
   const client = useMemo(() => new FtmsClient(), []);
@@ -243,7 +243,11 @@ export function RunTracker() {
     try {
       await saveRun(user.uid, run);
       setPendingSave(null);
-      setNotice("Run saved to your account and profile history.");
+      setNotice(
+        isDemo
+          ? "Demo run saved in this tab and profile history."
+          : "Run saved to your account and profile history.",
+      );
     } catch (e) {
       setNotice(cloudError(e) + " Keep this page open and retry saving.");
     } finally {
@@ -575,7 +579,9 @@ export function RunTracker() {
         </div>
         <p className="mt-5 text-xs" role="status">
           {notice ||
-            "Stop saves a completed run to your account. Keep this page open and visible while tracking."}
+            (isDemo
+              ? "Stop saves a demo run in this tab. Keep this page visible while tracking."
+              : "Stop saves a completed run to your account. Keep this page open and visible while tracking.")}
         </p>
       </section>
       {view.mode === "manual" && (

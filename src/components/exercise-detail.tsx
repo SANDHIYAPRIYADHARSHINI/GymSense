@@ -21,7 +21,7 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
   );
   const [count, setCount] = useState(0);
   const [loggedSets, setLoggedSets] = useState<LoggedSet[]>([]);
-  const { user, profile } = useAuth();
+  const { user, profile, isDemo } = useAuth();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [formScore, setFormScore] = useState<number | null>(null);
@@ -83,7 +83,9 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
       setPending(false);
       setCount(0);
       setFormScore(null);
-      setMessage("Set saved to your account.");
+      setMessage(
+        isDemo ? "Demo set saved in this tab." : "Set saved to your account.",
+      );
     } catch (e) {
       setMessage(cloudError(e));
     } finally {
@@ -156,8 +158,11 @@ export function ExerciseDetail({ exercise }: { exercise: Exercise }) {
           <section className="panel" aria-labelledby="logger-heading">
             <h2 id="logger-heading">Manual set &amp; rep logger</h2>
             <p className="mt-2 text-xs">
-              Log what you completed. Entries sync to your account; mark plan
-              exercises complete separately.
+              Log what you completed.{" "}
+              {isDemo
+                ? "Entries stay in this demo tab;"
+                : "Entries sync to your account;"}{" "}
+              mark plan exercises complete separately.
             </p>
             <p role="status" className="mt-4">
               {message}

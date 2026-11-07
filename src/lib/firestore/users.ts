@@ -1,3 +1,10 @@
+import {
+  isDemoSession,
+  demoSnapshot,
+  demoProfile,
+  demoPublicProfiles,
+  updateDemoProfile,
+} from "@/lib/demo/store";
 import { emptyWorkoutProgress } from "./types";
 import { writeProgress } from "./workouts";
 import {
@@ -24,7 +31,7 @@ export function normalizeUsername(value: string) {
   return username;
 }
 export async function createProfile(
-  user: User,
+  user: Pick<User, "uid" | "email">,
   input: { username: string; displayName: string; goal: Goal },
 ) {
   requireOnline();
@@ -68,6 +75,8 @@ export async function createProfile(
   });
 }
 export async function getUser(uid: string) {
+  if (isDemoSession(uid)) return demoSnapshot().profile;
+
   const snap = await getDoc(doc(firebaseClient().db, "users", uid));
   return snap.exists() ? (snap.data() as UserProfile) : null;
 }
@@ -75,6 +84,8 @@ export async function updateUser(
   uid: string,
   changes: Pick<UserProfile, "displayName" | "goal" | "fitnessLevel">,
 ) {
+  if (isDemoSession(uid)) return updateDemoProfile(changes);
+
   requireOnline();
   const { db } = firebaseClient();
   const batch = writeBatch(db);
@@ -89,6 +100,14 @@ export async function updateUser(
   await batch.commit();
 }
 export async function searchUsers(prefix: string): Promise<PublicProfile[]> {
+  if (isDemoSession()) {
+    const text = prefix.trim().toLowerCase().replace(/^@/, "");
+    return text
+      ? demoPublicProfiles()
+          .filter((p) => p.username.startsWith(text))
+          .slice(0, 20)
+      : [];
+  }
   const text = prefix.trim().toLowerCase().replace(/^@/, "");
   if (!/^[a-z0-9_]{1,24}$/.test(text)) return [];
   const snap = await getDocs(
@@ -102,6 +121,8 @@ export async function searchUsers(prefix: string): Promise<PublicProfile[]> {
   return snap.docs.map((d) => d.data() as PublicProfile);
 }
 export async function getPublicProfile(uid: string) {
+  if (isDemoSession()) return demoProfile(uid);
+
   const snap = await getDoc(doc(firebaseClient().db, "publicProfiles", uid));
   return snap.exists() ? (snap.data() as PublicProfile) : null;
 }

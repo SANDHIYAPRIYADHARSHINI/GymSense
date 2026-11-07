@@ -1,3 +1,13 @@
+import {
+  isDemoSession,
+  demoSnapshot,
+  watchDemo,
+  sendDemoRequest,
+  respondDemoRequest,
+  removeDemoRequest,
+  demoFriendActivity,
+  saveDemoChallenges,
+} from "@/lib/demo/store";
 import { validActivity } from "./streaks";
 import {
   collection,
@@ -19,6 +29,9 @@ export function watchFriendRequests(
   next: (requests: FriendRequest[]) => void,
   error: (e: Error) => void,
 ) {
+  if (isDemoSession(uid))
+    return watchDemo(() => next([...demoSnapshot().requests]));
+
   return onSnapshot(
     query(
       collection(firebaseClient().db, "friendRequests"),
@@ -37,6 +50,8 @@ export const friendsFromRequests = (uid: string, requests: FriendRequest[]) => [
   ),
 ];
 export async function sendFriendRequest(from: string, to: string) {
+  if (isDemoSession(from)) return sendDemoRequest(to);
+
   requireOnline();
   if (from === to) throw new Error("You cannot add yourself.");
   const { db } = firebaseClient();
@@ -60,6 +75,8 @@ export async function respondToFriendRequest(
   id: string,
   status: "accepted" | "rejected",
 ) {
+  if (isDemoSession()) return respondDemoRequest(id, status);
+
   requireOnline();
   const { db } = firebaseClient();
   await runTransaction(db, async (tx) => {
@@ -71,10 +88,13 @@ export async function respondToFriendRequest(
   });
 }
 export async function removeFriendOrRequest(id: string) {
+  if (isDemoSession()) return removeDemoRequest(id);
+
   requireOnline();
   await deleteDoc(doc(firebaseClient().db, "friendRequests", id));
 }
 export async function getFriendActivity(uid: string): Promise<UserActivity[]> {
+  if (isDemoSession()) return demoFriendActivity(uid);
   const s = await getDoc(doc(firebaseClient().db, "friendActivity", uid));
   return s.exists() ? validActivity(Object.values(s.data().activity)) : [];
 }
@@ -84,6 +104,9 @@ export function watchChallenges(
   next: (ids: string[]) => void,
   error: (e: Error) => void,
 ) {
+  if (isDemoSession(uid))
+    return watchDemo(() => next([...demoSnapshot().challenges]));
+
   return onSnapshot(
     doc(firebaseClient().db, "users", uid, "preferences", "challenges"),
     (s) => next(s.exists() ? s.data().joined : []),
@@ -91,6 +114,8 @@ export function watchChallenges(
   );
 }
 export async function saveChallenges(uid: string, joined: string[]) {
+  if (isDemoSession(uid)) return saveDemoChallenges(joined);
+
   requireOnline();
   await setDoc(
     doc(firebaseClient().db, "users", uid, "preferences", "challenges"),

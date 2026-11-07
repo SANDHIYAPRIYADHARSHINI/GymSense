@@ -13,7 +13,7 @@ const modeLabels = {
   ftms: "FTMS treadmill",
 };
 export function RunHistory({ compact = false }: { compact?: boolean }) {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [runs, setRuns] = useState<SavedRun[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +41,9 @@ export function RunHistory({ compact = false }: { compact?: boolean }) {
           <p className="eyebrow">YOUR RECORDED MILES</p>
           <h2 id="run-history-heading">Completed run history</h2>
         </div>
-        <span className="pill">SYNCED TO YOUR ACCOUNT</span>
+        <span className="pill">
+          {isDemo ? "DEMO RUNS ? THIS TAB" : "SYNCED TO YOUR ACCOUNT"}
+        </span>
       </div>
       {error && (
         <p role="alert" className="mb-4 text-xs text-amber-200">
@@ -126,8 +128,10 @@ export function RunHistory({ compact = false }: { compact?: boolean }) {
         </button>
       )}
       <p className="mt-4 text-[10px]">
-        Run summaries sync to your account and contribute to activity. GPS
-        coordinates are not saved.
+        {isDemo
+          ? "Demo run summaries stay in this tab and update sample activity."
+          : "Run summaries sync to your account and contribute to activity."}{" "}
+        GPS coordinates are not saved.
       </p>
     </section>
   );

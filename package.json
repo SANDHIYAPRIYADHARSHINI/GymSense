@@ -16,7 +16,9 @@
     "format:check": "prettier --check .",
     "prepare:pose": "node scripts/prepare-pose.mjs",
     "postinstall": "npm run prepare:pose",
-    "test:firebase": "firebase emulators:exec --project demo-gymsense --only auth,firestore \"tsx --test --test-concurrency=1 tests/firebase/*.test.mts\""
+    "test:firebase": "firebase emulators:exec --project demo-gymsense --only auth,firestore \"tsx --test --test-concurrency=1 tests/firebase/*.test.mts\"",
+    "test:demo": "tsx --test tests/demo/*.test.mts",
+    "test:demo:ui": "playwright test"
   },
   "dependencies": {
     "@gymsense/core": "*",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
