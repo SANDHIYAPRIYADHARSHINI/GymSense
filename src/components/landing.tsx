@@ -97,9 +97,6 @@ export function Landing() {
             <br className="desktop-break" /> that moves with you, one rep at a
             time.
           </p>
-          <Link className="button primary" href="/dashboard">
-            Build my plan <ArrowUpRight size={18} />
-          </Link>
           <div className="hero-proof">
             <span className="proof-avatars">
               <b>A</b>
@@ -189,13 +186,13 @@ export function Landing() {
         ))}
       </section>
       <section>
-        <div className="section-heading">
+        <div className="section-heading flex-wrap">
           <div>
             <p className="eyebrow">A PLAN WITH PURPOSE</p>
             <h2>What are you working toward?</h2>
           </div>
-          <Link href="/dashboard">
-            Explore plans <ArrowRight size={16} />
+          <Link className="button primary" href="/dashboard">
+            Build my plan <ArrowUpRight size={18} />
           </Link>
         </div>
         <GoalCards />
